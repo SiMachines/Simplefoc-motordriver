@@ -3,6 +3,7 @@
 #include "encoders/stm32hwencoder/STM32HWEncoder.h"
 
 
+#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define BRAKE_RESISTOR PB4
 #define BTS_ENABLE PA11
 #define PH_B PA9 
@@ -17,7 +18,7 @@
 #define ENCODER_PIN_A PB6
 #define ENCODER_PIN_B PB7
 
-#define PWM_INPUT PA0
+#define VDO PA0
 #define PWM_FREQ 16000 //16kHz
 //Motor setup parameters
 constexpr int pole_pairs = 15;
@@ -28,60 +29,41 @@ float maxCurrent = 10;
 float alignStrength = 4;
 float current_bandwidth = 100; //hz
 
-// Voltage monitoring constants - using mV for precision
-constexpr uint16_t VOLTAGE_DIVIDER_RATIO_x100 = 3200;  // 32.09 * 100
-constexpr uint16_t POWER_BUTTON_DIVIDER_RATIO_x100 = 1800;  // 17.94 * 100
-constexpr uint16_t ADC_REFERENCE_mV = 3300;  // 3.3V in millivolts
-constexpr uint16_t ADC_RES = 4096;  // 12-bit ADC
-constexpr uint16_t SUPPLY_DISABLE_THRESHOLD_mV = 18000;  // 18V in mV
-constexpr uint16_t BRAKE_ACTIVATION_OFFSET_mV = 2000;    // 2V in mV
-constexpr uint16_t POWER_BUTTON_THRESHOLD_mV = 19000;    // 19V in mV
-
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
-uint32_t pwmPeriodCounts = 0;
+uint16_t pwmPeriodCounts = 0;
 
 static void MX_TIM3_Init(void);
 static void MX_TIM2_Init(void);
-static void calc_hw_pwm(void);
-static void loop_time(void);
+ void calc_hw_pwm(void);
+ void loop_time(void);
+ void brake_control(void);
 
 // Voltage monitoring variables
-uint32_t supply_voltage_mV = 0;
-volatile bool supply_enabled;
+uint16_t supply_voltage_V = 24;
+uint16_t supply_voltage_Vx10000 = supply_voltage_V * 10000;
+
 volatile bool brake_active = false;
-uint32_t nominal_voltage = 24000;
-int32_t torque_target = 0;
 uint32_t period_ticks = 0;
 uint32_t duty_ticks = 0;
-uint32_t duty_scaled = 0;
 float dutyPercent = 0.0f;
 float target_current = 0.0f;
+int16_t I_Bus;
 
-constexpr u_int8_t CHECK_INTERVAL = 100; // in ms
-u_int32_t last_time;
 u_int32_t current_time;
-u_int16_t record_time;
-u_int32_t set_time;
+uint32_t t_debug = 0;
+uint32_t t_pwm = 0;
+uint16_t loop_dt = 0;
+uint32_t t_last_loop = 0;
 
+uint16_t MAX_REGEN_CURRENT = 0 * 100; // Amps * 100
+uint16_t BRKRESACT_SENS = 1;     // Threshold in Amps x 100
+uint16_t BRAKE_RESISTANCE = 5 * 100;   // Ohms * 100
 // Motor and driver objects
 BLDCMotor motor = BLDCMotor(pole_pairs, phase_resistance, motor_KV, phase_inductance);
 BLDCDriver3PWM driver = BLDCDriver3PWM(PH_A, PH_B, PH_C, BTS_OC);
 LowsideCurrentSense current_sense = LowsideCurrentSense(66, currentPHA, _NC, currentPHC);
 STM32HWEncoder encoder = STM32HWEncoder(ENCODER_PPR, ENCODER_PIN_A, ENCODER_PIN_B, _NC);
-
-
-void checkSupplyVoltage() {
-    // Read ADC value and convert to voltage in mV
-    //uint16_t adc_reading = analogRead(VBUS_PIN);
-    //supply_voltage_mV = (adc_reading * ADC_REFERENCE_mV / ADC_RES * VOLTAGE_DIVIDER_RATIO_x100) / 100;
-       
-    // Check if supply should be disabled (undervoltage protection)
-    if (supply_voltage_mV < SUPPLY_DISABLE_THRESHOLD_mV && motor.enabled) {
-      motor.disable();
-    }
- 
-}
 
 Commander commander = Commander(Serial);
 void onMotor(char* cmd){ commander.motor(&motor,cmd); }
@@ -121,9 +103,8 @@ current_sense.gain_a *= -1;
 current_sense.gain_c *= -1;
  
   pinMode(VDO_PIN, INPUT);
-  checkSupplyVoltage();
-  driver.voltage_power_supply = supply_voltage_mV / 1000;  // Convert mV to V for driver
-  driver.voltage_limit = driver.voltage_power_supply * 0.9;
+  driver.voltage_power_supply = supply_voltage_V;  // Convert mV to V for driver
+  driver.voltage_limit = driver.voltage_power_supply;
   driver.pwm_frequency = PWM_FREQ;
   driver.enable_active_high = false;
   if (!driver.init()){
@@ -154,7 +135,7 @@ current_sense.gain_c *= -1;
   motor.PID_current_q.output_ramp = 0;
   motor.LPF_current_q.Tf = 1/(_2PI*3.0f*current_bandwidth);
 
-  motor.voltage_limit = driver.voltage_power_supply * 0.58;
+  motor.voltage_limit = driver.voltage_power_supply * 0.58f;
   //motor.motion_downsample = downsample;
   motor.current_limit = maxCurrent;
   motor.phase_resistance = phase_resistance;
@@ -177,42 +158,37 @@ current_sense.gain_c *= -1;
 void loop() {
 // Motor control loop
   current_time = HAL_GetTick();
+
   loop_time();
   motor.loopFOC();
-
-float MAX_REGEN_CURRENT = 0.0f; // Amps
-float BRKRESACT_SENS = 0.01f;     // Threshold in Amps (adjust as needed)
-float BRAKE_RESISTANCE = 5.0f;   // Ohms (adjust to your actual brake resistor value)
-
-float I_Bus = -current_sense.getDCCurrent() - MAX_REGEN_CURRENT; // Negate to flip polarity
-if (I_Bus > BRKRESACT_SENS) { 
-    float duty_cycle = I_Bus * BRAKE_RESISTANCE/24;
-   
-    uint32_t pwm_counts = (uint32_t)(duty_cycle * pwmPeriodCounts);
-    uint32_t max_counts = (pwmPeriodCounts * 90u) / 100u;
-    
-    TIM3->CCR1 = (pwm_counts > max_counts) ? max_counts : pwm_counts;
-} else {
-    TIM3->CCR1 = 0;
-}
-
-  if ((current_time - last_time) > 1){
-    last_time = current_time;
+  brake_control();
+  if ((current_time - t_pwm ) >= 1){
+    t_pwm  = current_time;
   calc_hw_pwm();
   motor.move(target_current);
-  commander.run();
   }
+  commander.run();
 }
+
 
 
 void loop_time(void){
-record_time = current_time - set_time;
-set_time = current_time;  
-if (current_time - last_time > CHECK_INTERVAL) {
-last_time = current_time;
+loop_dt = current_time - t_last_loop;
+t_last_loop = current_time;
+if (current_time - t_debug >= 100) {
+t_debug = current_time;
  Serial.println("loop time :");
- Serial.print(record_time);
+ Serial.print(loop_dt);
   }
+}
+void brake_control(void){
+       I_Bus = -current_sense.getDCCurrent(motor.electrical_angle) * 100 - MAX_REGEN_CURRENT; // Negate to flip polarity
+    if (I_Bus > BRKRESACT_SENS){ // If over max regen current
+    
+     TIM3->CCR1 = CLAMP(((((int32_t)I_Bus * BRAKE_RESISTANCE * pwmPeriodCounts) /(supply_voltage_Vx10000))) ,0, ((pwmPeriodCounts*90)/100));
+    }else{
+     TIM3->CCR1 = 0;
+    }
 }
 static void MX_TIM3_Init(void)
 {
@@ -222,23 +198,28 @@ static void MX_TIM3_Init(void)
   TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
-  GPIO_InitTypeDef gpio = {0};
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  uint32_t timClockHz = HAL_RCC_GetPCLK2Freq();
-  if ((RCC->CFGR & RCC_CFGR_PPRE2) != RCC_CFGR_PPRE2_DIV1) {
-    timClockHz *= 2U; // Timer clock doubles when APB prescaler is not 1
-  }
-   pwmPeriodCounts = timClockHz / 2U / PWM_FREQ;
-  if (pwmPeriodCounts == 0U) {
-    pwmPeriodCounts = 1U; // Prevent zero period in case of misconfiguration
-  }
+uint32_t timClockHz = HAL_RCC_GetPCLK1Freq();
+/* TIM3 is on APB1. If APB1 prescaler != 1, timer clock is PCLK1*2 */
+if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
+  timClockHz *= 2U;
+}
+
+/* period counts = timer clock / PWM freq (no extra /2) */
+pwmPeriodCounts = timClockHz / PWM_FREQ;
+if (pwmPeriodCounts == 0U) {
+  pwmPeriodCounts = 1U;
+}
+
 
   /* USER CODE BEGIN TIM3_Init 1 */
-    gpio.Pin = GPIO_PIN_4;
-    gpio.Mode = GPIO_MODE_AF_PP;
-    gpio.Pull = GPIO_NOPULL;
-    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOA, &gpio);
+    GPIO_InitStruct.Pin = GPIO_PIN_4;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
@@ -246,15 +227,15 @@ static void MX_TIM3_Init(void)
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = pwmPeriodCounts;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   HAL_TIM_Base_Init(&htim3);
  
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig);
   HAL_TIM_PWM_Init(&htim3);
  
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_DISABLE;
+  sSlaveConfig.InputTrigger = TIM_TS_NONE;
   sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
   sSlaveConfig.TriggerFilter = 0;
   HAL_TIM_SlaveConfigSynchro(&htim3, &sSlaveConfig);
@@ -268,21 +249,30 @@ static void MX_TIM3_Init(void)
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1);
-
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 }
 static void MX_TIM2_Init(void)
 {
 
   /* USER CODE BEGIN TIM2_Init 0 */
-
   /* USER CODE END TIM2_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_IC_InitTypeDef sConfigIC = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN TIM2_Init 1 */
+
+__HAL_RCC_GPIOA_CLK_ENABLE();
+__HAL_RCC_TIM2_CLK_ENABLE();
+
+GPIO_InitStruct.Pin = GPIO_PIN_5;
+GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;  
+GPIO_InitStruct.Pull = GPIO_PULLDOWN;       
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;  
+GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;       
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
@@ -316,7 +306,7 @@ static void MX_TIM2_Init(void)
   sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
   sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
   sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-  sConfigIC.ICFilter = 0;
+  sConfigIC.ICFilter = 0;   //filter
   if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
@@ -334,9 +324,9 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-
+HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
+HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
   /* USER CODE END TIM2_Init 2 */
-
 }
 void calc_hw_pwm(void){
   /* Read capture registers directly from TIM3 handle (no IRQ required) */
