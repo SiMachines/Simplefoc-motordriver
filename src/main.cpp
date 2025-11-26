@@ -95,6 +95,13 @@ void setBandwidth(char* cmd) {
 }
 
 void setup() {
+  // Wait for PSU to turn on
+  pinMode(VDO_PIN, INPUT);
+  while (digitalRead(VDO_PIN) == LOW) {
+    Serial.println("PSU UNDETECTED");
+    delay(1000); // Small delay to avoid busy-waiting
+  }
+
   // monitoring port
   Serial.begin(921600);
   motor.useMonitoring(Serial);
@@ -104,7 +111,6 @@ void setup() {
 current_sense.gain_a *= -1;
 current_sense.gain_c *= -1;
  
-  pinMode(VDO_PIN, INPUT);
   driver.voltage_power_supply = supply_voltage_V;  // Convert mV to V for driver
   driver.voltage_limit = driver.voltage_power_supply;
   driver.pwm_frequency = PWM_FREQ;
