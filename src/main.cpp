@@ -43,12 +43,13 @@ static void MX_TIM2_Init(void);
 uint16_t supply_voltage_V = 24;
 uint16_t supply_voltage_Vx10000 = supply_voltage_V * 10000;
 
-volatile bool brake_active = false;
+
 uint32_t period_ticks = 0;
 uint32_t duty_ticks = 0;
 float dutyPercent = 0.0f;
 float target_current = 0.0f;
 int16_t I_Bus;
+bool brake_active;
 
 u_int32_t current_time;
 uint32_t t_debug = 0;
@@ -177,21 +178,23 @@ loop_dt = current_time - t_last_loop;
 t_last_loop = current_time;
 if (current_time - t_debug >= 100) {
 t_debug = current_time;
- Serial.println("loop time :");
+ Serial.print("loop time: ");
  Serial.print(loop_dt);
+  Serial.print("brake state: ");
+ Serial.println(brake_active);
   }
 }
 void brake_control(void){
        I_Bus = -current_sense.getDCCurrent(motor.electrical_angle) * 100 - MAX_REGEN_CURRENT; // Negate to flip polarity
     if (I_Bus > BRKRESACT_SENS){ // If over max regen current
-    
+    brake_active = true;
      TIM3->CCR1 = CLAMP(((((int32_t)I_Bus * BRAKE_RESISTANCE * pwmPeriodCounts) /(supply_voltage_Vx10000))) ,0, ((pwmPeriodCounts*90)/100));
     }else{
+    brake_active = false;
      TIM3->CCR1 = 0;
     }
-}
-static void MX_TIM3_Init(void)
-{
+ }
+static void MX_TIM3_Init(void){
   __HAL_RCC_TIM3_CLK_ENABLE();
                                
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
@@ -200,17 +203,17 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC = {0};
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-uint32_t timClockHz = HAL_RCC_GetPCLK1Freq();
-/* TIM3 is on APB1. If APB1 prescaler != 1, timer clock is PCLK1*2 */
-if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
+ uint32_t timClockHz = HAL_RCC_GetPCLK1Freq();
+ /* TIM3 is on APB1. If APB1 prescaler != 1, timer clock is PCLK1*2 */
+  if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
   timClockHz *= 2U;
-}
+ }
 
-/* period counts = timer clock / PWM freq (no extra /2) */
-pwmPeriodCounts = timClockHz / PWM_FREQ;
-if (pwmPeriodCounts == 0U) {
+ /* period counts = timer clock / PWM freq (no extra /2) */
+ pwmPeriodCounts = timClockHz / PWM_FREQ;
+ if (pwmPeriodCounts == 0U) {
   pwmPeriodCounts = 1U;
-}
+ }
 
 
   /* USER CODE BEGIN TIM3_Init 1 */
@@ -250,9 +253,8 @@ if (pwmPeriodCounts == 0U) {
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-}
-static void MX_TIM2_Init(void)
-{
+ }
+static void MX_TIM2_Init(void){
 
   /* USER CODE BEGIN TIM2_Init 0 */
   /* USER CODE END TIM2_Init 0 */
@@ -264,15 +266,15 @@ static void MX_TIM2_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN TIM2_Init 1 */
 
-__HAL_RCC_GPIOA_CLK_ENABLE();
-__HAL_RCC_TIM2_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+ __HAL_RCC_TIM2_CLK_ENABLE();
 
-GPIO_InitStruct.Pin = GPIO_PIN_5;
-GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;  
-GPIO_InitStruct.Pull = GPIO_PULLDOWN;       
-GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;  
-GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;       
-HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+ GPIO_InitStruct.Pin = GPIO_PIN_5;
+ GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;  
+ GPIO_InitStruct.Pull = GPIO_PULLDOWN;       
+ GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;  
+ GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;       
+ HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
@@ -324,10 +326,10 @@ HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
+ HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
+ HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
   /* USER CODE END TIM2_Init 2 */
-}
+ }
 void calc_hw_pwm(void){
   /* Read capture registers directly from TIM3 handle (no IRQ required) */
   period_ticks = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_2);
