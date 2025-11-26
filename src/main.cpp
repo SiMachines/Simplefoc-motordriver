@@ -50,7 +50,8 @@ float dutyPercent = 0.0f;
 float target_current = 0.0f;
 int16_t I_Bus;
 bool brake_active;
-
+bool simplefoc_init=true;
+bool simplefoc_init_finish=false;
 u_int32_t current_time;
 uint32_t t_debug = 0;
 uint32_t t_pwm = 0;
@@ -109,6 +110,7 @@ current_sense.gain_c *= -1;
   driver.pwm_frequency = PWM_FREQ;
   driver.enable_active_high = false;
   if (!driver.init()){
+    simplefoc_init=false;
     Serial.printf("Driver init failed!\n");
     return;
   }
@@ -146,15 +148,33 @@ current_sense.gain_c *= -1;
   motor.linkDriver(&driver); 
   motor.linkCurrentSense(&current_sense);
   motor.init();
-  encoder.init();
-  motor.linkSensor(&encoder);  
-  motor.initFOC();
 
+  encoder.init();
+  if (!encoder.initialized){
+    simplefoc_init=false;
+    Serial.printf("Encoder init failed!\n");
+    return;
+  }
+  motor.linkSensor(&encoder);  
+  
+  if (!motor.initFOC()){
+    simplefoc_init=false;
+    Serial.printf("initFOC failed!\n");
+    return;
+  }
    // Commander setup
   commander.add('B', setBandwidth, "Set current control bandwidth (Hz)");
   commander.add('M', onMotor, "my motor motion");
+  if (simplefoc_init){
+    simplefoc_init_finish=true;
+    Serial.printf("SimpleFOC initialization complete.\n");
   motor.enable();    
   }
+  else{
+    motor.disable();
+    Serial.printf("SimpleFOC initialization failed.\n");
+  }
+}
 
 void loop() {
 // Motor control loop
@@ -162,7 +182,9 @@ void loop() {
 
   loop_time();
   motor.loopFOC();
-  brake_control();
+  if (simplefoc_init_finish){
+   brake_control();
+  }
   if ((current_time - t_pwm ) >= 1){
     t_pwm  = current_time;
   calc_hw_pwm();
@@ -187,11 +209,11 @@ t_debug = current_time;
 void brake_control(void){
        I_Bus = -current_sense.getDCCurrent(motor.electrical_angle) * 100 - MAX_REGEN_CURRENT; // Negate to flip polarity
     if (I_Bus > BRKRESACT_SENS){ // If over max regen current
-    brake_active = true;
-     TIM3->CCR1 = CLAMP(((((int32_t)I_Bus * BRAKE_RESISTANCE * pwmPeriodCounts) /(supply_voltage_Vx10000))) ,0, ((pwmPeriodCounts*90)/100));
+    brake_active = CLAMP(((((int32_t)I_Bus * BRAKE_RESISTANCE * pwmPeriodCounts) /(supply_voltage_Vx10000))) ,0, ((pwmPeriodCounts*90)/100));
+     TIM3->CCR1 = brake_active;
     }else{
     brake_active = false;
-     TIM3->CCR1 = 0;
+     TIM3->CCR1 = brake_active;
     }
  }
 static void MX_TIM3_Init(void){
