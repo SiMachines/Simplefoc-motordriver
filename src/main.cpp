@@ -102,9 +102,9 @@ void setup() {
   }
 
   // monitoring port
-  Serial.begin(921600);
+  Serial.begin(115200);
   motor.useMonitoring(Serial);
-
+  pinMode(PB4, INPUT_PULLDOWN);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 current_sense.gain_a *= -1;
