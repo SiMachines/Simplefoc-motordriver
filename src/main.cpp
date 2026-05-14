@@ -27,6 +27,9 @@ float measured_electrical_rads;
 float radians;
 float electrical_rads = 0.0f;
 float degrees = 0;
+float abz_raw_rads = 0.0f;
+float abz_effective_rads = 0.0f;
+float abz_spi_offset_rads = 0.0f;
 float openloop_mechanical_rads = 0.0f;
 float openloop_electrical_rads = 0.0f;
 float openloop_mechanical_from_electrical_rads = 0.0f;
@@ -321,10 +324,17 @@ void loop() {
 		#endif
 	#endif
 
-		radians = encoder.getMechanicalAngle();
+		abz_raw_rads = encoder.getMechanicalAngle();
+		#if defined(USE_CALIBRATED_SENSOR)
+		abz_effective_rads = calibrated_encoder.getMechanicalAngle();
+		#else
+		abz_effective_rads = abz_raw_rads;
+		#endif
+		radians = abz_effective_rads;
 		degrees = radians * RAD_2_DEG;
 		encoder2.update();
 		spi_mechanical_rads = encoder2.getMechanicalAngle();
+		abz_spi_offset_rads = wrap_pm_pi(spi_mechanical_rads - abz_raw_rads);
 		openloop_mechanical_rads = _normalizeAngle(motor.shaft_angle);
 		openloop_electrical_rads = _normalizeAngle(motor.electrical_angle);
 		openloop_mechanical_from_electrical_rads = _normalizeAngle(openloop_electrical_rads / (float)pole_pairs);

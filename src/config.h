@@ -160,6 +160,9 @@ extern bool pwm_input_control_enabled;
 #endif
 
 extern float degrees;
+extern float abz_raw_rads;
+extern float abz_effective_rads;
+extern float abz_spi_offset_rads;
 extern float openloop_mechanical_rads;
 extern float openloop_electrical_rads;
 extern float openloop_mechanical_from_electrical_rads;
