@@ -594,44 +594,6 @@ void onSetABZResolution(char* cmd) {
   Serial.printf("ABZ rb ppr=%u, eeprom=%s\n", (unsigned)(readRawAbz + 1u), eeprom_saved ? "ok" : "not-saved");
 }
 
-void onSetEncoderSource(char* cmd) {
-  if (cmd == nullptr || cmd[0] == '\0') {
-    Serial.printf("SE<0|1> (0=ABZ,1=SPI), current=%u\n", (unsigned)get_encoder_source());
-    return;
-  }
-
-  const char* p = cmd;
-  while (*p == ' ' || *p == '\t') {
-    ++p;
-  }
-
-  if (*p == 'E' || *p == 'e') {
-    ++p;
-  }
-
-  while (*p == ' ' || *p == '\t' || *p == '=' || *p == ':') {
-    ++p;
-  }
-
-  uint8_t requested = 0xFFu;
-  if (*p == '0' || *p == 'A' || *p == 'a') {
-    requested = ENCODER_SOURCE_ABZ;
-  } else if (*p == '1' || *p == 'S' || *p == 's') {
-    requested = ENCODER_SOURCE_SPI;
-  }
-
-  if (requested == 0xFFu) {
-    Serial.println("Invalid source. Use SE0 (ABZ) or SE1 (SPI).");
-    return;
-  }
-
-  if (set_encoder_source(requested, true)) {
-    Serial.printf("Encoder source now %u\n", (unsigned)get_encoder_source());
-  } else {
-    Serial.println("Failed to switch encoder source.");
-  }
-}
-
 void onPWMInputControl(char* cmd) {
 #if defined(PWM_INPUT)
   if (cmd == nullptr || cmd[0] == '\0') {

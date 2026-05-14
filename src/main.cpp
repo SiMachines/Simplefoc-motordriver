@@ -23,6 +23,7 @@ float alignStrength = 3.0f;
 STM32PWMInput pwmInput = STM32PWMInput(PE5);
 #endif
 #endif
+#if defined(ENCODER_DEBUG_TELEMETRY)
 float measured_electrical_rads;
 float radians;
 float electrical_rads = 0.0f;
@@ -37,6 +38,7 @@ float openloop_vs_encoder_error_rads = 0.0f;
 float spi_mechanical_rads = 0.0f;
 float spi_vs_encoder_error_rads = 0.0f;
 float spi_vs_openloop_error_rads = 0.0f;
+#endif
 uint8_t encoder_source_id = ENCODER_SOURCE_ABZ;
 float phase_inductance = L_q;
 float current_bandwidth = 100.0f;
@@ -74,13 +76,15 @@ LowsideCurrentSense currentsense = LowsideCurrentSense(0.035f, 50.0f, currentPHA
 LowsideCurrentSense currentsense = LowsideCurrentSense(66.0f, currentPHA, currentPHB, currentPHC);
 #endif
 
+#if defined(ENCODER_ABZ_REVERSED)
+STM32HWEncoder encoder = STM32HWEncoder(ENCODER_PPR, ENCODER_PIN_B, ENCODER_PIN_A, _NC);
+#else
 STM32HWEncoder encoder = STM32HWEncoder(ENCODER_PPR, ENCODER_PIN_A, ENCODER_PIN_B, _NC);
+#endif
 
 #if defined(USE_CALIBRATED_SENSOR)
 constexpr int ENCODER_CAL_LUT_SIZE = 50;
 float encoder_calibration_lut[ENCODER_CAL_LUT_SIZE] = {0.0f};
-float encoder_zero_electric_angle = NOT_SET;
-Direction encoder_sensor_direction = Direction::UNKNOWN;
 CalibratedSensor calibrated_encoder = CalibratedSensor(encoder, ENCODER_CAL_LUT_SIZE, encoder_calibration_lut);
 #endif
 SPIClass SPI_3(MT6835_SPI_MOSI, MT6835_SPI_MISO, MT6835_SPI_SCK);
@@ -95,12 +99,25 @@ volatile uint8_t estop_flag = 0U;
 volatile uint8_t estop_latch_flag = 0U;
 #endif
 
+#if defined(ENCODER_DEBUG_TELEMETRY)
 static float wrap_pm_pi(float angle) {
 	float a = fmodf(angle + _PI, _2PI);
 	if (a < 0.0f) {
 		a += _2PI;
 	}
 	return a - _PI;
+}
+#endif
+
+static const char* direction_to_token(Direction dir) {
+	switch (dir) {
+		case Direction::CW:
+			return "Direction::CW";
+		case Direction::CCW:
+			return "Direction::CCW";
+		default:
+			return "Direction::UNKNOWN";
+	}
 }
 
 uint8_t get_encoder_source(void) {
@@ -164,7 +181,6 @@ Serial.println("encoder2.init(&SPI_3) setup...");
 	#if defined(PIO_FRAMEWORK_ARDUINO_NANOLIB_FLOAT_SCANF)
 	commander.add('B', setBandwidth, "Set current control bandwidth (Hz)");
 	commander.add('E', onSetABZResolution, nullptr);
-	commander.add('S', onSetEncoderSource, "Encoder source command: SE0=ABZ, SE1=SPI");
 	commander.add('C', onPWMInputControl, nullptr);
 	commander.add('M', onMotor, "my motor motion");
 	#endif
@@ -271,12 +287,6 @@ Serial.println("Step 8 setup...");
 
 	#if defined(USE_CALIBRATED_SENSOR)
 	motor.linkSensor(&calibrated_encoder);
-	if (_isset(encoder_zero_electric_angle)) {
-		motor.zero_electric_angle = encoder_zero_electric_angle;
-	}
-	if ((encoder_sensor_direction == Direction::CW) || (encoder_sensor_direction == Direction::CCW)) {
-		motor.sensor_direction = encoder_sensor_direction;
-	}
 	#else
 	motor.linkSensor(&encoder);
 	#endif
@@ -306,8 +316,22 @@ Serial.println("Step 8 setup...");
 	delay(4000);
 	#endif
 
+	#if defined(USE_FIXED_FOC_CALIBRATION)
+	Serial.printf("Using fixed FOC calibration: zero=%.8f, direction=%s\n", FOC_FIXED_ZERO_ELECTRIC_ANGLE, direction_to_token(FOC_FIXED_SENSOR_DIRECTION));
+	motor.zero_electric_angle = FOC_FIXED_ZERO_ELECTRIC_ANGLE;
+	motor.sensor_direction = FOC_FIXED_SENSOR_DIRECTION;
+	int foc_init = motor.initFOC(FOC_FIXED_ZERO_ELECTRIC_ANGLE, FOC_FIXED_SENSOR_DIRECTION);
+	#else
 	int foc_init = motor.initFOC();
+	#endif
 	Serial.printf("FOC init status: %d\n", foc_init);
+
+	#if !defined(USE_FIXED_FOC_CALIBRATION)
+	Serial.println("FOC calibration capture (paste into config.h and reflash):");
+	Serial.printf("#define FOC_FIXED_ZERO_ELECTRIC_ANGLE %.8ff\n", motor.zero_electric_angle);
+	Serial.printf("#define FOC_FIXED_SENSOR_DIRECTION %s\n", direction_to_token(motor.sensor_direction));
+	Serial.printf("MT6835 startup sensor_offset (for reference): %.8f\n", motor.sensor_offset);
+	#endif
 }
 
 void loop() {
@@ -324,6 +348,7 @@ void loop() {
 		#endif
 	#endif
 
+		#if defined(ENCODER_DEBUG_TELEMETRY)
 		abz_raw_rads = encoder.getMechanicalAngle();
 		#if defined(USE_CALIBRATED_SENSOR)
 		abz_effective_rads = calibrated_encoder.getMechanicalAngle();
@@ -343,6 +368,7 @@ void loop() {
 		spi_vs_openloop_error_rads = wrap_pm_pi(spi_mechanical_rads - openloop_mechanical_rads);
 		measured_electrical_rads = motor.electricalAngle();
 		electrical_rads = openloop_electrical_rads;
+		#endif
 
 #if defined(ESTOP_ENABLE)
 		estop_update();

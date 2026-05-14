@@ -32,9 +32,20 @@
 #define MT6835_AUTOCAL_FREQ 0U
 // Auto-save MT6835 setting changes (e.g. ABZ resolution via Commander E) to EEPROM
 #define MT6835_AUTO_EEPROM_WRITE_ON_SETTING
+// Encoder telemetry/debug calculations in loop() (ABZ/SPI/openloop comparison values)
+//#define ENCODER_DEBUG_TELEMETRY
+// Uncomment to use fixed FOC calibration values instead of auto-detection in initFOC.
+//#define USE_FIXED_FOC_CALIBRATION
+// Values to paste from runtime calibration printout, then reflash.
+#define FOC_FIXED_ZERO_ELECTRIC_ANGLE 0.0f
+#define FOC_FIXED_SENSOR_DIRECTION Direction::CW
 
 #define ENCODER_SOURCE_ABZ 0U
 #define ENCODER_SOURCE_SPI 1U
+
+// Flip ABZ direction by swapping A/B channels in software.
+// Comment this out if ABZ and SPI already move in the same direction.
+#define ENCODER_ABZ_REVERSED
 
 #if defined(PWM_INPUT)
 #include "utilities/stm32pwm/STM32PWMInput.h"
@@ -112,7 +123,7 @@ constexpr float ADC_REF_V = 3.0f;
 
 
 
-#define ENCODER_PPR 2048
+#define ENCODER_PPR 16384
 #define RAD_2_DEG 57.2957795131f
 #define PWM_FREQ 16000
 #define BRAKE_PWM_FREQ 20000
@@ -159,6 +170,7 @@ extern STM32PWMInput pwmInput;
 extern bool pwm_input_control_enabled;
 #endif
 
+#if defined(ENCODER_DEBUG_TELEMETRY)
 extern float degrees;
 extern float abz_raw_rads;
 extern float abz_effective_rads;
@@ -170,6 +182,7 @@ extern float openloop_vs_encoder_error_rads;
 extern float spi_mechanical_rads;
 extern float spi_vs_encoder_error_rads;
 extern float spi_vs_openloop_error_rads;
+#endif
 extern uint8_t encoder_source_id;
 extern float phase_inductance;
 extern float current_bandwidth;
@@ -250,7 +263,6 @@ float target_current_to_amps(int16_t target);
 #if defined(PIO_FRAMEWORK_ARDUINO_NANOLIB_FLOAT_SCANF)
 void setBandwidth(char* cmd);
 void onSetABZResolution(char* cmd);
-void onSetEncoderSource(char* cmd);
 void onPWMInputControl(char* cmd);
 void onMotor(char* cmd);
 #endif
