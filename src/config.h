@@ -30,6 +30,8 @@
 #define MT6835_CALIB_SPEED_TOL_RPM 5.0f
 // MT6835 autocalibration frequency (0-7) - drives target RPM and min rotations
 #define MT6835_AUTOCAL_FREQ 0U
+// Auto-save MT6835 setting changes (e.g. ABZ resolution via Commander E) to EEPROM
+#define MT6835_AUTO_EEPROM_WRITE_ON_SETTING
 
 #if defined(PWM_INPUT)
 #include "utilities/stm32pwm/STM32PWMInput.h"
@@ -155,6 +157,10 @@ extern bool pwm_input_control_enabled;
 #endif
 
 extern float degrees;
+extern float openloop_mechanical_rads;
+extern float openloop_electrical_rads;
+extern float openloop_mechanical_from_electrical_rads;
+extern float openloop_vs_encoder_error_rads;
 extern float phase_inductance;
 extern float current_bandwidth;
 extern float a, b, c;

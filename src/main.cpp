@@ -27,6 +27,10 @@ float measured_electrical_rads;
 float radians;
 float electrical_rads = 0.0f;
 float degrees = 0;
+float openloop_mechanical_rads = 0.0f;
+float openloop_electrical_rads = 0.0f;
+float openloop_mechanical_from_electrical_rads = 0.0f;
+float openloop_vs_encoder_error_rads = 0.0f;
 float phase_inductance = L_q;
 float current_bandwidth = 100.0f;
 float a = 0.0f, b = 0.0f, c = 0.0f;
@@ -83,6 +87,14 @@ Commander commander = Commander(Serial);
 volatile uint8_t estop_flag = 0U;
 volatile uint8_t estop_latch_flag = 0U;
 #endif
+
+static float wrap_pm_pi(float angle) {
+	float a = fmodf(angle + _PI, _2PI);
+	if (a < 0.0f) {
+		a += _2PI;
+	}
+	return a - _PI;
+}
 
 void setup() {
 	Serial.begin(921600);
@@ -267,8 +279,12 @@ void loop() {
 
 		radians = encoder.getMechanicalAngle();
 		degrees = radians * RAD_2_DEG;
+		openloop_mechanical_rads = _normalizeAngle(motor.shaft_angle);
+		openloop_electrical_rads = _normalizeAngle(motor.electrical_angle);
+		openloop_mechanical_from_electrical_rads = _normalizeAngle(openloop_electrical_rads / (float)pole_pairs);
+		openloop_vs_encoder_error_rads = wrap_pm_pi(openloop_mechanical_rads - radians);
 		measured_electrical_rads = motor.electricalAngle();
-		electrical_rads = motor.electrical_angle;
+		electrical_rads = openloop_electrical_rads;
 
 #if defined(ESTOP_ENABLE)
 		estop_update();

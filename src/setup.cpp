@@ -28,7 +28,8 @@ bool wait_for_yes_no(const char* prompt, uint32_t timeout_ms) {
 
 uint8_t mt6835_cal_state(void) {
   const uint8_t raw = encoder2.getCalibrationStatus();
-  return (raw >> 6) & 0x03u;
+  // Some driver versions already return 2-bit state; others return full register byte.
+  return (raw <= 0x03u) ? raw : ((raw >> 6) & 0x03u);
 }
 
 float mt6835_target_rpm_from_freq(uint8_t freq) {
@@ -214,7 +215,11 @@ void mt6835_autocal_sequence(void) {
     digitalWrite(CALIBRATION_GPIO, HIGH);
     delay(100);
     uint8_t state = mt6835_cal_state();
-    if (state != 0x01u) {
+    bool use_time_fallback = false;
+    if (state == 0x00u) {
+      use_time_fallback = true;
+      Serial.println("MT6835 status unavailable/not-running, using time fallback (>=64 rotations).");
+    } else if (state != 0x01u) {
       Serial.printf("MT6835 autocal not running (state=%u)\n", state);
       digitalWrite(CALIBRATION_GPIO, LOW);
       ramp_velocity(motor, motor.target, 0.0f, 1000U);
@@ -235,12 +240,17 @@ void mt6835_autocal_sequence(void) {
       motor.move();
       state = mt6835_cal_state();
       const uint32_t elapsed = HAL_GetTick() - calib_start;
-      const bool status_valid = (state <= 0x03u);
 
-      if (!status_valid) {
+      if (use_time_fallback) {
         if (!status_warned) {
-          Serial.println("MT6835 calibration status unavailable, falling back to time-based completion.");
+          Serial.println("Using time-based completion only (no SPI status feedback).");
           status_warned = true;
+        }
+        if (fabsf(motor.shaftVelocity()) < stall_floor_rad_s) {
+          Serial.println("MT6835 calibration aborted: stall during fallback calibration.");
+          aborted = true;
+          calibration_done = true;
+          continue;
         }
         if (elapsed >= min_calib_ms) {
           calibration_success = true;
@@ -519,6 +529,24 @@ void estop_update(void) {
 }
 
 #if defined(PIO_FRAMEWORK_ARDUINO_NANOLIB_FLOAT_SCANF)
+static bool mt6835_commit_eeprom_with_wait(const char* what) {
+  const char* item = (what != nullptr) ? what : "setting";
+  Serial.printf("Saving MT6835 %s to EEPROM...\n", item);
+  const bool ack = encoder2.writeEEPROM();
+  if (!ack) {
+    Serial.println("MT6835 EEPROM write command failed (no ACK).");
+    return false;
+  }
+
+  // MT6835 requires settle time after program command.
+  for (int s = 6; s >= 1; --s) {
+    Serial.printf("MT6835 EEPROM programming: wait %d s\n", s);
+    delay(1000);
+  }
+  Serial.println("MT6835 EEPROM save complete.");
+  return true;
+}
+
 void setBandwidth(char* cmd) {
   float new_bandwidth = current_bandwidth;
   commander.scalar(&new_bandwidth, cmd);
@@ -556,8 +584,14 @@ void onSetABZResolution(char* cmd) {
   const uint16_t rawAbz = static_cast<uint16_t>(requestedPpr - 1L);
   encoder2.setABZResolution(rawAbz);
 
+#if defined(MT6835_AUTO_EEPROM_WRITE_ON_SETTING)
+  const bool eeprom_saved = mt6835_commit_eeprom_with_wait("ABZ resolution");
+#else
+  const bool eeprom_saved = false;
+#endif
+
   const uint16_t readRawAbz = encoder2.getABZResolution();
-  Serial.printf("ABZ rb ppr=%u", (unsigned)(readRawAbz + 1u));
+  Serial.printf("ABZ rb ppr=%u, eeprom=%s\n", (unsigned)(readRawAbz + 1u), eeprom_saved ? "ok" : "not-saved");
 }
 
 void onPWMInputControl(char* cmd) {
