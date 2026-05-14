@@ -322,6 +322,9 @@ Serial.println("Step 8 setup...");
 	motor.sensor_direction = FOC_FIXED_SENSOR_DIRECTION;
 	int foc_init = motor.initFOC(FOC_FIXED_ZERO_ELECTRIC_ANGLE, FOC_FIXED_SENSOR_DIRECTION);
 	#else
+	// Force full auto-calibration so direction/offset are re-detected and printed for capture.
+	motor.sensor_direction = Direction::UNKNOWN;
+	motor.zero_electric_angle = NOT_SET;
 	int foc_init = motor.initFOC();
 	#endif
 	Serial.printf("FOC init status: %d\n", foc_init);
