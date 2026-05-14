@@ -31,6 +31,10 @@ float openloop_mechanical_rads = 0.0f;
 float openloop_electrical_rads = 0.0f;
 float openloop_mechanical_from_electrical_rads = 0.0f;
 float openloop_vs_encoder_error_rads = 0.0f;
+float spi_mechanical_rads = 0.0f;
+float spi_vs_encoder_error_rads = 0.0f;
+float spi_vs_openloop_error_rads = 0.0f;
+uint8_t encoder_source_id = ENCODER_SOURCE_ABZ;
 float phase_inductance = L_q;
 float current_bandwidth = 100.0f;
 float a = 0.0f, b = 0.0f, c = 0.0f;
@@ -96,6 +100,45 @@ static float wrap_pm_pi(float angle) {
 	return a - _PI;
 }
 
+uint8_t get_encoder_source(void) {
+	return encoder_source_id;
+}
+
+bool set_encoder_source(uint8_t source, bool reinit_foc) {
+	if (source != ENCODER_SOURCE_ABZ && source != ENCODER_SOURCE_SPI) {
+		return false;
+	}
+
+	if (source == encoder_source_id) {
+		return true;
+	}
+
+	motor.target = 0.0f;
+	motor.disable();
+
+	if (source == ENCODER_SOURCE_SPI) {
+		motor.linkSensor(&encoder2);
+		Serial.println("Encoder source switched to SPI (MT6835)");
+	} else {
+		#if defined(USE_CALIBRATED_SENSOR)
+		motor.linkSensor(&calibrated_encoder);
+		#else
+		motor.linkSensor(&encoder);
+		#endif
+		Serial.println("Encoder source switched to ABZ");
+	}
+
+	encoder_source_id = source;
+
+	if (reinit_foc) {
+		int foc_status = motor.initFOC();
+		Serial.printf("FOC re-init status after source switch: %d\n", foc_status);
+	}
+
+	motor.enable();
+	return true;
+}
+
 void setup() {
 	Serial.begin(921600);
 	debug.enable();
@@ -118,6 +161,7 @@ Serial.println("encoder2.init(&SPI_3) setup...");
 	#if defined(PIO_FRAMEWORK_ARDUINO_NANOLIB_FLOAT_SCANF)
 	commander.add('B', setBandwidth, "Set current control bandwidth (Hz)");
 	commander.add('E', onSetABZResolution, nullptr);
+	commander.add('S', onSetEncoderSource, "Encoder source command: SE0=ABZ, SE1=SPI");
 	commander.add('C', onPWMInputControl, nullptr);
 	commander.add('M', onMotor, "my motor motion");
 	#endif
@@ -279,10 +323,14 @@ void loop() {
 
 		radians = encoder.getMechanicalAngle();
 		degrees = radians * RAD_2_DEG;
+		encoder2.update();
+		spi_mechanical_rads = encoder2.getMechanicalAngle();
 		openloop_mechanical_rads = _normalizeAngle(motor.shaft_angle);
 		openloop_electrical_rads = _normalizeAngle(motor.electrical_angle);
 		openloop_mechanical_from_electrical_rads = _normalizeAngle(openloop_electrical_rads / (float)pole_pairs);
 		openloop_vs_encoder_error_rads = wrap_pm_pi(openloop_mechanical_rads - radians);
+		spi_vs_encoder_error_rads = wrap_pm_pi(spi_mechanical_rads - radians);
+		spi_vs_openloop_error_rads = wrap_pm_pi(spi_mechanical_rads - openloop_mechanical_rads);
 		measured_electrical_rads = motor.electricalAngle();
 		electrical_rads = openloop_electrical_rads;
 

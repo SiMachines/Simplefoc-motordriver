@@ -33,6 +33,9 @@
 // Auto-save MT6835 setting changes (e.g. ABZ resolution via Commander E) to EEPROM
 #define MT6835_AUTO_EEPROM_WRITE_ON_SETTING
 
+#define ENCODER_SOURCE_ABZ 0U
+#define ENCODER_SOURCE_SPI 1U
+
 #if defined(PWM_INPUT)
 #include "utilities/stm32pwm/STM32PWMInput.h"
 #endif
@@ -161,6 +164,10 @@ extern float openloop_mechanical_rads;
 extern float openloop_electrical_rads;
 extern float openloop_mechanical_from_electrical_rads;
 extern float openloop_vs_encoder_error_rads;
+extern float spi_mechanical_rads;
+extern float spi_vs_encoder_error_rads;
+extern float spi_vs_openloop_error_rads;
+extern uint8_t encoder_source_id;
 extern float phase_inductance;
 extern float current_bandwidth;
 extern float a, b, c;
@@ -206,6 +213,8 @@ void calibrated_sensor_lut_sequence(void);
 float mt6835_target_rpm_from_freq(uint8_t freq);
 uint8_t mt6835_autocal_freq_from_rpm(float rpm);
 float mt6835_min_rotations_from_freq(uint8_t freq);
+bool set_encoder_source(uint8_t source, bool reinit_foc = true);
+uint8_t get_encoder_source(void);
 
 void setup();
 void loop();
@@ -238,6 +247,7 @@ float target_current_to_amps(int16_t target);
 #if defined(PIO_FRAMEWORK_ARDUINO_NANOLIB_FLOAT_SCANF)
 void setBandwidth(char* cmd);
 void onSetABZResolution(char* cmd);
+void onSetEncoderSource(char* cmd);
 void onPWMInputControl(char* cmd);
 void onMotor(char* cmd);
 #endif
