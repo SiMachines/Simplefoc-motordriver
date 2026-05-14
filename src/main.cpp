@@ -151,6 +151,9 @@ bool set_encoder_source(uint8_t source, bool reinit_foc) {
 	encoder_source_id = source;
 
 	if (reinit_foc) {
+		motor.sensor_direction = Direction::UNKNOWN;
+		motor.zero_electric_angle = NOT_SET;
+		Serial.println("Re-init FOC in auto-calibration mode (dir=UNKNOWN, zero=NOT_SET)");
 		int foc_status = motor.initFOC();
 		Serial.printf("FOC re-init status after source switch: %d\n", foc_status);
 	}
@@ -325,9 +328,12 @@ Serial.println("Step 8 setup...");
 	// Force full auto-calibration so direction/offset are re-detected and printed for capture.
 	motor.sensor_direction = Direction::UNKNOWN;
 	motor.zero_electric_angle = NOT_SET;
+	Serial.println("Startup FOC auto-calibration mode (dir=UNKNOWN, zero=NOT_SET)");
+	Serial.printf("Pre-initFOC state: dir=%s, zero=%.8f\n", direction_to_token(motor.sensor_direction), motor.zero_electric_angle);
 	int foc_init = motor.initFOC();
 	#endif
 	Serial.printf("FOC init status: %d\n", foc_init);
+	Serial.printf("Post-initFOC state: dir=%s, zero=%.8f\n", direction_to_token(motor.sensor_direction), motor.zero_electric_angle);
 
 	#if !defined(USE_FIXED_FOC_CALIBRATION)
 	Serial.println("FOC calibration capture (paste into config.h and reflash):");
