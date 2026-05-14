@@ -301,11 +301,11 @@ Serial.println("Step 8 setup...");
 	currentsense.skip_align = true;
 	Serial.printf("Motor init status: %d\n", m_init);
 
-	#if defined(MT6835_CALIB_OPENLOOP) && defined(SIMPLEFOC_STM32_DEBUG)
+	#if defined(MT6835_CALIB_OPENLOOP)
 	mt6835_autocal_sequence();
 	#endif
 
-	#if defined(USE_CALIBRATED_SENSOR) && defined(CALIBRATE_SENSOR_ON_STARTUP) && defined(SIMPLEFOC_STM32_DEBUG)
+	#if defined(USE_CALIBRATED_SENSOR) && defined(CALIBRATE_SENSOR_ON_STARTUP)
 	calibrated_sensor_lut_sequence();
 	#endif
 

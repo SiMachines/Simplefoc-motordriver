@@ -19,11 +19,12 @@
 #define ESTOP_ENABLE
 //#define MOTOR_CHAR
 #define USE_CALIBRATED_SENSOR
-#define CALIBRATE_SENSOR_ON_STARTUP
 // Enable MT6835 absolute angle offset capture at startup
 #define MT6835_SET_SENSOR_OFFSET_FROM_SPI
-// Enable MT6835 user autocalibration run on startup
-#define MT6835_CALIB_OPENLOOP
+// Uncomment to run MT6835 user autocalibration routine at startup.
+//#define MT6835_CALIB_OPENLOOP
+// Uncomment to run calibrated sensor LUT calibration at startup.
+//#define CALIBRATE_SENSOR_ON_STARTUP
 // Ramp time to reach calibration speed
 #define MT6835_CALIB_RAMP_MS 2000U
 // Acceptable speed error in RPM when checking ramp completion

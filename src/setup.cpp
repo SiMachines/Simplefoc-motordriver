@@ -86,7 +86,7 @@ void ramp_velocity(BLDCMotor& m, float start_vel, float end_vel, uint32_t durati
   m.target = end_vel;
 }
 
-#if defined(MT6835_CALIB_OPENLOOP) && defined(SIMPLEFOC_STM32_DEBUG)
+#if defined(MT6835_CALIB_OPENLOOP)
 void mt6835_autocal_sequence(void) {
   if (!wait_for_yes_no("Start MT6835 User-AutoCalibration?", 5000U)) {
     return;
@@ -304,7 +304,7 @@ void mt6835_autocal_sequence(void) {
 }
 #endif
 
-#if defined(USE_CALIBRATED_SENSOR) && defined(CALIBRATE_SENSOR_ON_STARTUP) && defined(SIMPLEFOC_STM32_DEBUG)
+#if defined(USE_CALIBRATED_SENSOR) && defined(CALIBRATE_SENSOR_ON_STARTUP)
 void calibrated_sensor_lut_sequence(void) {
   if (!wait_for_yes_no("Start calibrated sensor LUT calibration?", 5000U)) {
     return;
