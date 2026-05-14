@@ -39,7 +39,7 @@ float spi_mechanical_rads = 0.0f;
 float spi_vs_encoder_error_rads = 0.0f;
 float spi_vs_openloop_error_rads = 0.0f;
 #endif
-uint8_t encoder_source_id = ENCODER_SOURCE_ABZ;
+uint8_t encoder_source_id = ENCODER_SOURCE_DEFAULT;
 float phase_inductance = L_q;
 float current_bandwidth = 100.0f;
 float a = 0.0f, b = 0.0f, c = 0.0f;
@@ -109,17 +109,6 @@ static float wrap_pm_pi(float angle) {
 }
 #endif
 
-static const char* direction_to_token(Direction dir) {
-	switch (dir) {
-		case Direction::CW:
-			return "Direction::CW";
-		case Direction::CCW:
-			return "Direction::CCW";
-		default:
-			return "Direction::UNKNOWN";
-	}
-}
-
 uint8_t get_encoder_source(void) {
 	return encoder_source_id;
 }
@@ -151,9 +140,6 @@ bool set_encoder_source(uint8_t source, bool reinit_foc) {
 	encoder_source_id = source;
 
 	if (reinit_foc) {
-		motor.sensor_direction = Direction::UNKNOWN;
-		motor.zero_electric_angle = NOT_SET;
-		Serial.println("Re-init FOC in auto-calibration mode (dir=UNKNOWN, zero=NOT_SET)");
 		int foc_status = motor.initFOC();
 		Serial.printf("FOC re-init status after source switch: %d\n", foc_status);
 	}
@@ -288,11 +274,17 @@ Serial.println("Step 8 setup...");
 	motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
 	motor.modulation_centered = 1;
 
-	#if defined(USE_CALIBRATED_SENSOR)
-	motor.linkSensor(&calibrated_encoder);
-	#else
-	motor.linkSensor(&encoder);
-	#endif
+	if (encoder_source_id == ENCODER_SOURCE_SPI) {
+		motor.linkSensor(&encoder2);
+		Serial.println("Startup encoder source: SPI (MT6835)");
+	} else {
+		#if defined(USE_CALIBRATED_SENSOR)
+		motor.linkSensor(&calibrated_encoder);
+		#else
+		motor.linkSensor(&encoder);
+		#endif
+		Serial.println("Startup encoder source: ABZ");
+	}
 	motor.linkDriver(&driver);
 	motor.linkCurrentSense(&currentsense);
 	currentsense.linkDriver(&driver);
@@ -319,28 +311,8 @@ Serial.println("Step 8 setup...");
 	delay(4000);
 	#endif
 
-	#if defined(USE_FIXED_FOC_CALIBRATION)
-	Serial.printf("Using fixed FOC calibration: zero=%.8f, direction=%s\n", FOC_FIXED_ZERO_ELECTRIC_ANGLE, direction_to_token(FOC_FIXED_SENSOR_DIRECTION));
-	motor.zero_electric_angle = FOC_FIXED_ZERO_ELECTRIC_ANGLE;
-	motor.sensor_direction = FOC_FIXED_SENSOR_DIRECTION;
-	int foc_init = motor.initFOC(FOC_FIXED_ZERO_ELECTRIC_ANGLE, FOC_FIXED_SENSOR_DIRECTION);
-	#else
-	// Force full auto-calibration so direction/offset are re-detected and printed for capture.
-	motor.sensor_direction = Direction::UNKNOWN;
-	motor.zero_electric_angle = NOT_SET;
-	Serial.println("Startup FOC auto-calibration mode (dir=UNKNOWN, zero=NOT_SET)");
-	Serial.printf("Pre-initFOC state: dir=%s, zero=%.8f\n", direction_to_token(motor.sensor_direction), motor.zero_electric_angle);
 	int foc_init = motor.initFOC();
-	#endif
 	Serial.printf("FOC init status: %d\n", foc_init);
-	Serial.printf("Post-initFOC state: dir=%s, zero=%.8f\n", direction_to_token(motor.sensor_direction), motor.zero_electric_angle);
-
-	#if !defined(USE_FIXED_FOC_CALIBRATION)
-	Serial.println("FOC calibration capture (paste into config.h and reflash):");
-	Serial.printf("#define FOC_FIXED_ZERO_ELECTRIC_ANGLE %.8ff\n", motor.zero_electric_angle);
-	Serial.printf("#define FOC_FIXED_SENSOR_DIRECTION %s\n", direction_to_token(motor.sensor_direction));
-	Serial.printf("MT6835 startup sensor_offset (for reference): %.8f\n", motor.sensor_offset);
-	#endif
 }
 
 void loop() {

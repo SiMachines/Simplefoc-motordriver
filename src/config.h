@@ -35,14 +35,11 @@
 #define MT6835_AUTO_EEPROM_WRITE_ON_SETTING
 // Encoder telemetry/debug calculations in loop() (ABZ/SPI/openloop comparison values)
 //#define ENCODER_DEBUG_TELEMETRY
-// Uncomment to use fixed FOC calibration values instead of auto-detection in initFOC.
-//#define USE_FIXED_FOC_CALIBRATION
-// Values to paste from runtime calibration printout, then reflash.
-#define FOC_FIXED_ZERO_ELECTRIC_ANGLE 0.0f
-#define FOC_FIXED_SENSOR_DIRECTION Direction::CW
 
 #define ENCODER_SOURCE_ABZ 0U
 #define ENCODER_SOURCE_SPI 1U
+// Startup encoder source. Keep ABZ support available via set_encoder_source().
+#define ENCODER_SOURCE_DEFAULT ENCODER_SOURCE_SPI
 
 // Flip ABZ direction by swapping A/B channels in software.
 // Comment this out if ABZ and SPI already move in the same direction.
