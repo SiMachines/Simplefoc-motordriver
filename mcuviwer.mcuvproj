@@ -552,7 +552,7 @@ do_not_interpret_as_enum = false
 [var39]
 name = pwm_input_control_enabled
 tracked_name = pwm_input_control_enabled
-address = 536877832
+address = 536871808
 type = 1
 color = 1120112811
 should_update_from_elf = true
