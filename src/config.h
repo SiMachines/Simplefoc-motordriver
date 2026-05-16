@@ -18,9 +18,9 @@
 //#define ESTOP_REQUIRE_HOLD
 #define ESTOP_ENABLE
 //#define MOTOR_CHAR
-#define USE_CALIBRATED_SENSOR
+//#define USE_CALIBRATED_SENSOR
 // Enable MT6835 absolute angle offset capture at startup
-#define MT6835_SET_SENSOR_OFFSET_FROM_SPI
+//#define MT6835_SET_SENSOR_OFFSET_FROM_SPI
 // Uncomment to run MT6835 user autocalibration routine at startup.
 //#define MT6835_CALIB_OPENLOOP
 // Uncomment to run calibrated sensor LUT calibration at startup.
@@ -43,7 +43,7 @@
 
 // Flip ABZ direction by swapping A/B channels in software.
 // Comment this out if ABZ and SPI already move in the same direction.
-#define ENCODER_ABZ_REVERSED
+//#define ENCODER_ABZ_REVERSED
 
 #if defined(PWM_INPUT)
 #include "utilities/stm32pwm/STM32PWMInput.h"

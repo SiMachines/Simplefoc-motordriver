@@ -82,11 +82,6 @@ STM32HWEncoder encoder = STM32HWEncoder(ENCODER_PPR, ENCODER_PIN_B, ENCODER_PIN_
 STM32HWEncoder encoder = STM32HWEncoder(ENCODER_PPR, ENCODER_PIN_A, ENCODER_PIN_B, _NC);
 #endif
 
-#if defined(USE_CALIBRATED_SENSOR)
-constexpr int ENCODER_CAL_LUT_SIZE = 50;
-float encoder_calibration_lut[ENCODER_CAL_LUT_SIZE] = {0.0f};
-CalibratedSensor calibrated_encoder = CalibratedSensor(encoder, ENCODER_CAL_LUT_SIZE, encoder_calibration_lut);
-#endif
 SPIClass SPI_3(MT6835_SPI_MOSI, MT6835_SPI_MISO, MT6835_SPI_SCK);
 SPISettings mt6835_spi_settings(1000000, MT6835_BITORDER, SPI_MODE3);
 MagneticSensorMT6835 encoder2 = MagneticSensorMT6835(MT6835_SPI_CS, mt6835_spi_settings);
@@ -108,45 +103,6 @@ static float wrap_pm_pi(float angle) {
 	return a - _PI;
 }
 #endif
-
-uint8_t get_encoder_source(void) {
-	return encoder_source_id;
-}
-
-bool set_encoder_source(uint8_t source, bool reinit_foc) {
-	if (source != ENCODER_SOURCE_ABZ && source != ENCODER_SOURCE_SPI) {
-		return false;
-	}
-
-	if (source == encoder_source_id) {
-		return true;
-	}
-
-	motor.target = 0.0f;
-	motor.disable();
-
-	if (source == ENCODER_SOURCE_SPI) {
-		motor.linkSensor(&encoder2);
-		Serial.println("Encoder source switched to SPI (MT6835)");
-	} else {
-		#if defined(USE_CALIBRATED_SENSOR)
-		motor.linkSensor(&calibrated_encoder);
-		#else
-		motor.linkSensor(&encoder);
-		#endif
-		Serial.println("Encoder source switched to ABZ");
-	}
-
-	encoder_source_id = source;
-
-	if (reinit_foc) {
-		int foc_status = motor.initFOC();
-		Serial.printf("FOC re-init status after source switch: %d\n", foc_status);
-	}
-
-	motor.enable();
-	return true;
-}
 
 void setup() {
 	Serial.begin(921600);
@@ -273,18 +229,7 @@ Serial.println("Step 8 setup...");
 	motor.monitor_downsample = 100;
 	motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
 	motor.modulation_centered = 1;
-
-	if (encoder_source_id == ENCODER_SOURCE_SPI) {
-		motor.linkSensor(&encoder2);
-		Serial.println("Startup encoder source: SPI (MT6835)");
-	} else {
-		#if defined(USE_CALIBRATED_SENSOR)
-		motor.linkSensor(&calibrated_encoder);
-		#else
-		motor.linkSensor(&encoder);
-		#endif
-		Serial.println("Startup encoder source: ABZ");
-	}
+	motor.linkSensor(&encoder2);
 	motor.linkDriver(&driver);
 	motor.linkCurrentSense(&currentsense);
 	currentsense.linkDriver(&driver);
@@ -298,10 +243,6 @@ Serial.println("Step 8 setup...");
 
 	#if defined(MT6835_CALIB_OPENLOOP)
 	mt6835_autocal_sequence();
-	#endif
-
-	#if defined(USE_CALIBRATED_SENSOR) && defined(CALIBRATE_SENSOR_ON_STARTUP)
-	calibrated_sensor_lut_sequence();
 	#endif
 
 	#if defined(MOTOR_CHAR)
@@ -331,11 +272,7 @@ void loop() {
 
 		#if defined(ENCODER_DEBUG_TELEMETRY)
 		abz_raw_rads = encoder.getMechanicalAngle();
-		#if defined(USE_CALIBRATED_SENSOR)
-		abz_effective_rads = calibrated_encoder.getMechanicalAngle();
-		#else
 		abz_effective_rads = abz_raw_rads;
-		#endif
 		radians = abz_effective_rads;
 		degrees = radians * RAD_2_DEG;
 		encoder2.update();
