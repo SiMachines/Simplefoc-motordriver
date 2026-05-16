@@ -43,12 +43,12 @@ should_log = false
 log_directory = 
 
 [var0]
-name = I_Bus
-tracked_name = I_Bus
-address = 536878178
-type = 4
-color = 1406426464
-should_update_from_elf = true
+name = _MON_CURR_D
+tracked_name = _MON_CURR_D
+address = 2952790272
+type = 0
+color = 1977333242
+should_update_from_elf = false
 shift = 0
 mask = 4294967295
 high_level_type = 0
@@ -56,6 +56,19 @@ value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
 [var1]
+name = _MON_CURR_Q
+tracked_name = _MON_CURR_Q
+address = 2952794112
+type = 0
+color = 2454271028
+should_update_from_elf = false
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var2]
 name = a
 tracked_name = a
 address = 536877880
@@ -68,7 +81,46 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var2]
+[var3]
+name = abz_effective_rads
+tracked_name = abz_effective_rads
+address = 536877920
+type = 7
+color = 3166198857
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var4]
+name = abz_raw_rads
+tracked_name = abz_raw_rads
+address = 536877924
+type = 7
+color = 1491046228
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var5]
+name = abz_spi_offset_rads
+tracked_name = abz_spi_offset_rads
+address = 536877916
+type = 7
+color = 3261002197
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var6]
 name = b
 tracked_name = b
 address = 536877876
@@ -81,64 +133,12 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var3]
-name = brake_active
-tracked_name = brake_active
-address = 536878177
-type = 1
-color = 2287065660
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-do_not_interpret_as_enum = false
-
-[var4]
-name = btsOcMonitorInitialized
-tracked_name = btsOcMonitorInitialized
-address = 536876687
-type = 1
-color = 3292149050
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-do_not_interpret_as_enum = false
-
-[var5]
-name = btsOcReportedActive
-tracked_name = btsOcReportedActive
-address = 536876686
-type = 1
-color = 4214765760
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-do_not_interpret_as_enum = false
-
-[var6]
+[var7]
 name = c
 tracked_name = c
 address = 536877872
 type = 7
 color = 1375666197
-should_update_from_elf = true
-shift = 0
-mask = 4294967295
-high_level_type = 0
-value_to_write = 0.000000
-do_not_interpret_as_enum = false
-
-[var7]
-name = degrees
-tracked_name = degrees
-address = 536877888
-type = 7
-color = 2578401674
 should_update_from_elf = true
 shift = 0
 mask = 4294967295
@@ -160,6 +160,19 @@ value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
 [var9]
+name = electrical_degrees
+tracked_name = electrical_degrees
+address = 536878016
+type = 7
+color = 1888542953
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var10]
 name = estop_flag
 tracked_name = estop_flag
 address = 536876687
@@ -172,7 +185,228 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var10]
+[var11]
+name = foc_current_d_amps
+tracked_name = foc_current_d_amps
+address = 536877932
+type = 7
+color = 2438136896
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var12]
+name = foc_current_q_amps
+tracked_name = foc_current_q_amps
+address = 536877936
+type = 7
+color = 3542185766
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var13]
+name = foc_expected_electrical_degrees
+tracked_name = foc_expected_electrical_degrees
+address = 536877988
+type = 7
+color = 671585000
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var14]
+name = foc_internal_electrical_degrees
+tracked_name = foc_internal_electrical_degrees
+address = 536877984
+type = 7
+color = 1334429770
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var15]
+name = foc_sensor_direction_sign
+tracked_name = foc_sensor_direction_sign
+address = 536877928
+type = 7
+color = 826208764
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var16]
+name = foc_sensor_electrical_error_degrees
+tracked_name = foc_sensor_electrical_error_degrees
+address = 536877980
+type = 7
+color = 4160107359
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var17]
+name = foc_sensor_offset_degrees
+tracked_name = foc_sensor_offset_degrees
+address = 536877960
+type = 7
+color = 3611492593
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var18]
+name = foc_stator_vector_degrees
+tracked_name = foc_stator_vector_degrees
+address = 536877976
+type = 7
+color = 170672431
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var19]
+name = foc_stator_vector_magnitude
+tracked_name = foc_stator_vector_magnitude
+address = 536877972
+type = 7
+color = 2546883052
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var20]
+name = foc_stator_vs_internal_electrical_degrees
+tracked_name = foc_stator_vs_internal_electrical_degrees
+address = 536877964
+type = 7
+color = 2436355869
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var21]
+name = foc_stator_vs_rotor_degrees
+tracked_name = foc_stator_vs_rotor_degrees
+address = 536877968
+type = 7
+color = 3251361466
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var22]
+name = foc_target_current_amps
+tracked_name = foc_target_current_amps
+address = 536877940
+type = 7
+color = 1649380980
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var23]
+name = foc_ualpha
+tracked_name = foc_ualpha
+address = 536877948
+type = 7
+color = 1644767283
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var24]
+name = foc_ubeta
+tracked_name = foc_ubeta
+address = 536877944
+type = 7
+color = 4172556611
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var25]
+name = foc_voltage_d
+tracked_name = foc_voltage_d
+address = 536877952
+type = 7
+color = 3180903690
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var26]
+name = foc_voltage_q
+tracked_name = foc_voltage_q
+address = 536877956
+type = 7
+color = 1009853715
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var27]
+name = foc_zero_electric_degrees
+tracked_name = foc_zero_electric_degrees
+address = 536877992
+type = 7
+color = 988326043
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var28]
 name = motor.Ua
 tracked_name = motor.Ua
 address = 536877816
@@ -185,7 +419,7 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var11]
+[var29]
 name = motor.Ub
 tracked_name = motor.Ub
 address = 536877820
@@ -198,7 +432,7 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var12]
+[var30]
 name = motor.Uc
 tracked_name = motor.Uc
 address = 536877824
@@ -211,7 +445,59 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var13]
+[var31]
+name = openloop_electrical_rads
+tracked_name = openloop_electrical_rads
+address = 536877908
+type = 7
+color = 1484691201
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var32]
+name = openloop_mechanical_from_electrical_rads
+tracked_name = openloop_mechanical_from_electrical_rads
+address = 536877904
+type = 7
+color = 3150879753
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var33]
+name = openloop_mechanical_rads
+tracked_name = openloop_mechanical_rads
+address = 536877912
+type = 7
+color = 2172820583
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var34]
+name = openloop_vs_encoder_error_rads
+tracked_name = openloop_vs_encoder_error_rads
+address = 536877900
+type = 7
+color = 2200059866
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var35]
 name = period_ticks
 tracked_name = period_ticks
 address = 536877868
@@ -224,7 +510,7 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var14]
+[var36]
 name = pwm_input_control_enabled
 tracked_name = pwm_input_control_enabled
 address = 536877832
@@ -237,7 +523,111 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var15]
+[var37]
+name = radians
+tracked_name = radians
+address = 536878008
+type = 7
+color = 2479085545
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var38]
+name = sfoc_electrical_degrees
+tracked_name = sfoc_electrical_degrees
+address = 536878012
+type = 7
+color = 1281653590
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var39]
+name = shaft_mechanical_degrees
+tracked_name = shaft_mechanical_degrees
+address = 536878000
+type = 7
+color = 3104994743
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var40]
+name = shaft_vs_spi_degrees
+tracked_name = shaft_vs_spi_degrees
+address = 536877996
+type = 7
+color = 3928607973
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var41]
+name = spi_mechanical_degrees
+tracked_name = spi_mechanical_degrees
+address = 536878020
+type = 7
+color = 4137522428
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var42]
+name = spi_mechanical_rads
+tracked_name = spi_mechanical_rads
+address = 536877896
+type = 7
+color = 702382115
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var43]
+name = spi_vs_encoder_error_rads
+tracked_name = spi_vs_encoder_error_rads
+address = 536877892
+type = 7
+color = 2827866359
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var44]
+name = spi_vs_openloop_error_rads
+tracked_name = spi_vs_openloop_error_rads
+address = 536877888
+type = 7
+color = 2928279094
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+do_not_interpret_as_enum = false
+
+[var45]
 name = target
 tracked_name = target
 address = 536877836
@@ -250,7 +640,7 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var16]
+[var46]
 name = target_current
 tracked_name = target_current
 address = 536877858
@@ -263,7 +653,7 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var17]
+[var47]
 name = v_bus
 tracked_name = v_bus
 address = 536877844
@@ -276,10 +666,10 @@ high_level_type = 0
 value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
-[var18]
+[var48]
 name = v_error
 tracked_name = v_error
-address = 536877856
+address = 536877857
 type = 1
 color = 3148402499
 should_update_from_elf = true
@@ -290,7 +680,7 @@ value_to_write = 0.000000
 do_not_interpret_as_enum = false
 
 [group0]
-name = new group0
+name = Encoder Testicles
 acquisition_type = 0
 
 [group0-plot0]
@@ -299,81 +689,309 @@ type = 0
 visibility = true
 
 [group0-plot0-series0]
-name = I_Bus
-visibility = false
+name = abz_effective_rads
+visibility = true
 format = DEC
 
 [group0-plot0-series1]
-name = a
+name = abz_raw_rads
 visibility = true
 format = DEC
 
 [group0-plot0-series2]
-name = b
+name = abz_spi_offset_rads
 visibility = true
 format = DEC
 
 [group0-plot0-series3]
-name = brake_active
-visibility = false
+name = openloop_electrical_rads
+visibility = true
 format = DEC
 
 [group0-plot0-series4]
-name = btsOcMonitorInitialized
-visibility = false
+name = openloop_mechanical_from_electrical_rads
+visibility = true
 format = DEC
 
 [group0-plot0-series5]
-name = btsOcReportedActive
-visibility = false
+name = openloop_mechanical_rads
+visibility = true
 format = DEC
 
 [group0-plot0-series6]
-name = c
+name = openloop_vs_encoder_error_rads
 visibility = true
 format = DEC
 
 [group0-plot0-series7]
-name = degrees
+name = radians
 visibility = true
 format = DEC
 
 [group0-plot0-series8]
-name = duty_ticks
-visibility = false
-format = DEC
-
-[group0-plot0-series9]
-name = estop_flag
-visibility = false
-format = DEC
-
-[group0-plot0-series10]
-name = period_ticks
-visibility = false
-format = DEC
-
-[group0-plot0-series11]
-name = pwm_input_control_enabled
-visibility = false
-format = DEC
-
-[group0-plot0-series12]
-name = target
-visibility = false
-format = DEC
-
-[group0-plot0-series13]
-name = target_current
+name = spi_mechanical_rads
 visibility = true
 format = DEC
 
-[group0-plot0-series14]
+[group0-plot0-series9]
+name = spi_vs_encoder_error_rads
+visibility = true
+format = DEC
+
+[group0-plot0-series10]
+name = spi_vs_openloop_error_rads
+visibility = true
+format = DEC
+
+[group1]
+name = FOC_
+acquisition_type = 0
+
+[group1-plot0]
+name = new plot0
+type = 0
+visibility = true
+
+[group1-plot0-series0]
+name = _MON_CURR_D
+visibility = true
+format = DEC
+
+[group1-plot0-series1]
+name = _MON_CURR_Q
+visibility = true
+format = DEC
+
+[group1-plot0-series2]
+name = a
+visibility = true
+format = DEC
+
+[group1-plot0-series3]
+name = b
+visibility = true
+format = DEC
+
+[group1-plot0-series4]
+name = c
+visibility = true
+format = DEC
+
+[group1-plot0-series5]
+name = foc_current_d_amps
+visibility = true
+format = DEC
+
+[group1-plot0-series6]
+name = foc_current_q_amps
+visibility = true
+format = DEC
+
+[group1-plot0-series7]
+name = foc_expected_electrical_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series8]
+name = foc_internal_electrical_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series9]
+name = foc_sensor_direction_sign
+visibility = false
+format = DEC
+
+[group1-plot0-series10]
+name = foc_sensor_electrical_error_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series11]
+name = foc_sensor_offset_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series12]
+name = foc_stator_vector_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series13]
+name = foc_stator_vector_magnitude
+visibility = false
+format = DEC
+
+[group1-plot0-series14]
+name = foc_stator_vs_internal_electrical_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series15]
+name = foc_stator_vs_rotor_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series16]
+name = foc_target_current_amps
+visibility = false
+format = DEC
+
+[group1-plot0-series17]
+name = foc_ualpha
+visibility = false
+format = DEC
+
+[group1-plot0-series18]
+name = foc_ubeta
+visibility = false
+format = DEC
+
+[group1-plot0-series19]
+name = foc_voltage_d
+visibility = false
+format = DEC
+
+[group1-plot0-series20]
+name = foc_voltage_q
+visibility = false
+format = DEC
+
+[group1-plot0-series21]
+name = foc_zero_electric_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series22]
+name = openloop_electrical_rads
+visibility = true
+format = DEC
+
+[group1-plot0-series23]
+name = sfoc_electrical_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series24]
+name = shaft_mechanical_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series25]
+name = shaft_vs_spi_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series26]
+name = spi_mechanical_degrees
+visibility = false
+format = DEC
+
+[group1-plot0-series27]
+name = spi_mechanical_rads
+visibility = true
+format = DEC
+
+[group1-plot0-series28]
+name = spi_vs_encoder_error_rads
+visibility = false
+format = DEC
+
+[group1-plot0-series29]
 name = v_bus
 visibility = false
 format = DEC
 
-[group0-plot0-series15]
+[group2]
+name = new group0
+acquisition_type = 0
+
+[group2-plot0]
+name = new plot0
+type = 0
+visibility = true
+
+[group2-plot0-series0]
+name = a
+visibility = true
+format = DEC
+
+[group2-plot0-series1]
+name = b
+visibility = true
+format = DEC
+
+[group2-plot0-series2]
+name = c
+visibility = true
+format = DEC
+
+[group2-plot0-series3]
+name = duty_ticks
+visibility = false
+format = DEC
+
+[group2-plot0-series4]
+name = electrical_degrees
+visibility = true
+format = DEC
+
+[group2-plot0-series5]
+name = estop_flag
+visibility = false
+format = DEC
+
+[group2-plot0-series6]
+name = foc_voltage_q
+visibility = true
+format = DEC
+
+[group2-plot0-series7]
+name = period_ticks
+visibility = false
+format = DEC
+
+[group2-plot0-series8]
+name = pwm_input_control_enabled
+visibility = false
+format = DEC
+
+[group2-plot0-series9]
+name = radians
+visibility = false
+format = DEC
+
+[group2-plot0-series10]
+name = sfoc_electrical_degrees
+visibility = false
+format = DEC
+
+[group2-plot0-series11]
+name = spi_mechanical_rads
+visibility = true
+format = DEC
+
+[group2-plot0-series12]
+name = spi_vs_openloop_error_rads
+visibility = false
+format = DEC
+
+[group2-plot0-series13]
+name = target
+visibility = false
+format = DEC
+
+[group2-plot0-series14]
+name = target_current
+visibility = false
+format = DEC
+
+[group2-plot0-series15]
+name = v_bus
+visibility = true
+format = DEC
+
+[group2-plot0-series16]
 name = v_error
 visibility = false
 format = DEC

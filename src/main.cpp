@@ -8,7 +8,7 @@ float L_d = 0.00116f;
 float L_q = 0.00131f;
 float motor_KV = 12.5f;
 float maxCurrent = 5.0f;
-float alignStrength = 2.0f;
+float alignStrength = 4.0f;
 #if defined(PWM_INPUT)
 STM32PWMInput pwmInput = STM32PWMInput(PB_15_ALT2);
 #endif
@@ -186,8 +186,9 @@ static void update_encoder_debug_telemetry() {
 
 void setup() {
 	Serial.begin(921600);
-	debug.enable();
-	delay(3000);
+	motor.useMonitoring(Serial);
+	//debug.enable();
+	delay(2000);
 	Serial.println("Starting setup...");
 #if defined(HAL_CORDIC_MODULE_ENABLED)
 	SimpleFOC_CORDIC_Config();
@@ -241,8 +242,7 @@ Serial.println("Step 4 setup...");
 	}
 #endif
 
-	currentsense.gain_a *= -1;
-	currentsense.gain_c *= -1;
+	
 	driver.voltage_power_supply = supply_voltage_V;
 	driver.voltage_limit = driver.voltage_power_supply * 0.9f;
 	//motor.voltage_limit = driver.voltage_limit * 0.5f;
@@ -288,11 +288,13 @@ Serial.println("Step 8 setup...");
 	
 	motor.linkSensor(&encoder2);
 	motor.linkDriver(&driver);
-	//motor.linkCurrentSense(&currentsense);
-	//currentsense.linkDriver(&driver);
+	//currentsense.gain_a *= -1;
+	//currentsense.gain_c *= -1;
 	//currentsense.skip_align = false;
-	//int cs_init = currentsense.init();
-	//Serial.printf("Current sense init status: %d\n", cs_init); 
+	currentsense.linkDriver(&driver);
+	int cs_init = currentsense.init();
+	Serial.printf("Current sense init status: %d\n", cs_init); 
+	motor.linkCurrentSense(&currentsense);
 
     motor.axis_inductance.d = L_d;
     motor.axis_inductance.q = L_q;
@@ -312,12 +314,12 @@ Serial.println("Step 8 setup...");
 	motor.current_limit = maxCurrent;
 	motor.phase_resistance = phase_resistance;
 	motor.voltage_sensor_align = alignStrength;
-	//motor.monitor_downsample = 100;
-	//motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
+	motor.monitor_downsample = 10;
+	motor.monitor_variables = _MON_CURR_Q | _MON_CURR_D;
 	motor.modulation_centered = 1;
 
     motor.controller = MotionControlType::torque;
-	motor.torque_controller = TorqueControlType::estimated_current;
+	motor.torque_controller = TorqueControlType::voltage;  //estimated_current
 	motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 	
 	int m_init = motor.init();
@@ -341,6 +343,7 @@ Serial.println("Step 8 setup...");
 void loop() {
 	current_time = HAL_GetTick();
 	encoder2.update();
+	motor.monitor();
 	if ((current_time - t_pwm) >= 1) {
 		t_pwm = current_time;
 		check_vbus();
