@@ -27,6 +27,7 @@ STM32PWMInput pwmInput = STM32PWMInput(PE5);
 float sfoc_electrical_rads;
 float spi_mechanical_degrees;
 float electrical_degrees;
+float sfoc_electrical_degrees;
 float radians;
 float electrical_rads = 0.0f;
 float abz_raw_rads = 0.0f;
@@ -286,6 +287,7 @@ void loop() {
 		spi_vs_encoder_error_rads = wrap_pm_pi(spi_mechanical_rads - radians);
 		spi_vs_openloop_error_rads = wrap_pm_pi(spi_mechanical_rads - openloop_mechanical_rads);
 		sfoc_electrical_rads = motor.electricalAngle();
+		sfoc_electrical_degrees = sfoc_electrical_rads * RAD_2_DEG;
 		#endif
 
 #if defined(ESTOP_ENABLE)
