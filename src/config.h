@@ -121,7 +121,7 @@ constexpr float ADC_REF_V = 3.0f;
 
 
 
-#define ENCODER_PPR 16384
+#define ENCODER_PPR 2048
 #define RAD_2_DEG 57.2957795131f
 #define PWM_FREQ 16000
 #define BRAKE_PWM_FREQ 20000

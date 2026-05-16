@@ -305,13 +305,13 @@ Serial.println("Step 8 setup...");
 	
 	motor.linkSensor(&encoder2);
 	motor.linkDriver(&driver);
-	currentsense.gain_a *= -1;
-	currentsense.gain_c *= -1;
-	currentsense.skip_align = true;
-	currentsense.linkDriver(&driver);
-	int cs_init = currentsense.init();
-	Serial.printf("Current sense init status: %d\n", cs_init); 
-	motor.linkCurrentSense(&currentsense);
+	//currentsense.gain_a *= -1;
+	//currentsense.gain_c *= -1;
+	//currentsense.skip_align = true;
+	//currentsense.linkDriver(&driver);
+	//int cs_init = currentsense.init();
+	//Serial.printf("Current sense init status: %d\n", cs_init); 
+	//motor.linkCurrentSense(&currentsense);
 
     motor.axis_inductance.d = L_d;
     motor.axis_inductance.q = L_q;
@@ -336,7 +336,7 @@ Serial.println("Step 8 setup...");
 	motor.modulation_centered = 1;
 
     motor.controller = MotionControlType::torque;
-	motor.torque_controller = TorqueControlType::estimated_current;  //estimated_current
+	motor.torque_controller = TorqueControlType::voltage;  //estimated_current
 	motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 	
 	int m_init = motor.init();
@@ -405,8 +405,8 @@ void loop() {
 #if defined(PWM_INPUT)
 		calc_hw_pwm();
 		if (pwm_input_control_enabled) {
-			target = -target_current_to_amps(target_current);
-			motor.move(target);
+			target = target_current_to_amps(target_current);
+			motor.move(-target);
 		} else {
 			motor.move();
 		}
