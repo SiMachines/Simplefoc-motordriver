@@ -68,7 +68,7 @@ float spi_vs_openloop_error_rads = 0.0f;
 #endif
 uint8_t encoder_source_id = ENCODER_SOURCE_DEFAULT;
 float phase_inductance = L_q;
-float current_bandwidth = 100.0f;
+float current_bandwidth = 200.0f;
 float a = 0.0f, b = 0.0f, c = 0.0f;
 uint16_t pwmPeriodCounts = 0;
 uint32_t period_ticks = 0;
@@ -148,8 +148,8 @@ static void update_encoder_debug_telemetry() {
 	monitor_target_value = motor.target;
 	monitor_voltage_q_value = motor.voltage.q;
 	monitor_voltage_d_value = motor.voltage.d;
-	monitor_current_q_ma = monitor_currents.q * 1000.0f;
-	monitor_current_d_ma = monitor_currents.d * 1000.0f;
+	monitor_current_q_ma = monitor_currents.q;
+	monitor_current_d_ma = monitor_currents.d;
 
 	abz_raw_rads = encoder.getMechanicalAngle();
 	abz_effective_rads = abz_raw_rads;
@@ -203,8 +203,8 @@ static void update_encoder_debug_telemetry() {
 
 void setup() {
 	Serial.begin(921600);
-	motor.useMonitoring(Serial);
-	//debug.enable();
+	//motor.useMonitoring(Serial);
+	debug.enable();
 	delay(2000);
 	Serial.println("Starting setup...");
 #if defined(HAL_CORDIC_MODULE_ENABLED)
@@ -223,7 +223,7 @@ Serial.println("encoder2.init(&SPI_3) setup...");
 	#endif
 	#if defined(PIO_FRAMEWORK_ARDUINO_NANOLIB_FLOAT_SCANF)
 	commander.add('B', setBandwidth, "Set current control bandwidth (Hz)");
-	commander.add('E', onSetABZResolution, nullptr);
+	commander.add('N', onSetABZResolution, nullptr);
 	commander.add('C', onPWMInputControl, nullptr);
 	commander.add('M', onMotor, "my motor motion");
 	#endif
@@ -262,8 +262,8 @@ Serial.println("Step 4 setup...");
 	
 	driver.voltage_power_supply = supply_voltage_V;
 	driver.voltage_limit = driver.voltage_power_supply * 0.9f;
-	//motor.voltage_limit = driver.voltage_limit * 0.5f;
-	motor.voltage_limit = 2;
+	motor.voltage_limit = driver.voltage_limit * 0.4f;
+	//motor.voltage_limit = 2;
 	driver.pwm_frequency = PWM_FREQ;
 	driver.enable_active_high = true;
 Serial.println("Step 6 setup...");
@@ -305,9 +305,9 @@ Serial.println("Step 8 setup...");
 	
 	motor.linkSensor(&encoder2);
 	motor.linkDriver(&driver);
-	//currentsense.gain_a *= -1;
-	//currentsense.gain_c *= -1;
-	//currentsense.skip_align = false;
+	currentsense.gain_a *= -1;
+	currentsense.gain_c *= -1;
+	currentsense.skip_align = true;
 	currentsense.linkDriver(&driver);
 	int cs_init = currentsense.init();
 	Serial.printf("Current sense init status: %d\n", cs_init); 
@@ -331,12 +331,12 @@ Serial.println("Step 8 setup...");
 	motor.current_limit = maxCurrent;
 	motor.phase_resistance = phase_resistance;
 	motor.voltage_sensor_align = alignStrength;
-	motor.monitor_downsample = 10;
-	motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
+	//motor.monitor_downsample = 10;
+	//motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
 	motor.modulation_centered = 1;
 
     motor.controller = MotionControlType::torque;
-	motor.torque_controller = TorqueControlType::voltage;  //estimated_current
+	motor.torque_controller = TorqueControlType::estimated_current;  //estimated_current
 	motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 	
 	int m_init = motor.init();
@@ -360,7 +360,7 @@ Serial.println("Step 8 setup...");
 void loop() {
 	current_time = HAL_GetTick();
 	encoder2.update();
-	motor.monitor();
+	//motor.monitor();
 	if ((current_time - t_pwm) >= 1) {
 		t_pwm = current_time;
 		check_vbus();
