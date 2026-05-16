@@ -8,7 +8,7 @@ float L_d = 0.00116f;
 float L_q = 0.00131f;
 float motor_KV = 12.5f;
 float maxCurrent = 5.0f;
-float alignStrength = 4.0f;
+float alignStrength = 2.0f;
 #if defined(PWM_INPUT)
 STM32PWMInput pwmInput = STM32PWMInput(PB_15_ALT2);
 #endif
@@ -30,6 +30,26 @@ float spi_mechanical_degrees;
 float electrical_degrees;
 float sfoc_electrical_degrees;
 float radians;
+float abz_mechanical_degrees = 0.0f;
+float shaft_mechanical_degrees = 0.0f;
+float shaft_vs_spi_degrees = 0.0f;
+float foc_zero_electric_degrees = 0.0f;
+float foc_expected_electrical_degrees = 0.0f;
+float foc_internal_electrical_degrees = 0.0f;
+float foc_sensor_electrical_error_degrees = 0.0f;
+float foc_stator_vector_degrees = 0.0f;
+float foc_stator_vector_magnitude = 0.0f;
+float foc_stator_vs_rotor_degrees = 0.0f;
+float foc_stator_vs_internal_electrical_degrees = 0.0f;
+float foc_sensor_offset_degrees = 0.0f;
+float foc_voltage_q = 0.0f;
+float foc_voltage_d = 0.0f;
+float foc_ualpha = 0.0f;
+float foc_ubeta = 0.0f;
+float foc_target_current_amps = 0.0f;
+float foc_current_q_amps = 0.0f;
+float foc_current_d_amps = 0.0f;
+float foc_sensor_direction_sign = 0.0f;
 float abz_raw_rads = 0.0f;
 float abz_effective_rads = 0.0f;
 float abz_spi_offset_rads = 0.0f;
@@ -104,6 +124,64 @@ static float wrap_pm_pi(float angle) {
 	}
 	return a - _PI;
 }
+
+static float normalized_degrees(float angle) {
+	return _normalizeAngle(angle) * RAD_2_DEG;
+}
+
+static float wrapped_degrees(float angle) {
+	return wrap_pm_pi(angle) * RAD_2_DEG;
+}
+
+static void update_encoder_debug_telemetry() {
+	abz_raw_rads = encoder.getMechanicalAngle();
+	abz_effective_rads = abz_raw_rads;
+	radians = abz_effective_rads;
+	abz_mechanical_degrees = normalized_degrees(abz_raw_rads);
+
+	spi_mechanical_rads = encoder2.getMechanicalAngle();
+	spi_mechanical_degrees = normalized_degrees(spi_mechanical_rads);
+	abz_spi_offset_rads = wrap_pm_pi(spi_mechanical_rads - abz_raw_rads);
+
+	const float shaft_mechanical_rads = _normalizeAngle(motor.shaftAngle());
+	const float internal_electrical_rads = _normalizeAngle(motor.electrical_angle);
+	const float sensor_electrical_rads = motor.electricalAngle();
+	const float zero_electric_rads = _isset(motor.zero_electric_angle) ? _normalizeAngle(motor.zero_electric_angle) : 0.0f;
+	const float expected_electrical_rads = _normalizeAngle(
+		static_cast<float>(motor.sensor_direction * pole_pairs) * spi_mechanical_rads - zero_electric_rads);
+	const float stator_vector_magnitude = sqrtf(motor.Ualpha * motor.Ualpha + motor.Ubeta * motor.Ubeta);
+	const float stator_vector_rads = (stator_vector_magnitude > 0.001f) ? _normalizeAngle(atan2f(motor.Ubeta, motor.Ualpha)) : 0.0f;
+
+	openloop_mechanical_rads = _normalizeAngle(motor.shaft_angle);
+	openloop_electrical_rads = internal_electrical_rads;
+	electrical_degrees = normalized_degrees(internal_electrical_rads);
+	openloop_mechanical_from_electrical_rads = _normalizeAngle(openloop_electrical_rads / (float)pole_pairs);
+	openloop_vs_encoder_error_rads = wrap_pm_pi(openloop_mechanical_rads - radians);
+	spi_vs_encoder_error_rads = wrap_pm_pi(spi_mechanical_rads - radians);
+	spi_vs_openloop_error_rads = wrap_pm_pi(spi_mechanical_rads - openloop_mechanical_rads);
+	sfoc_electrical_rads = sensor_electrical_rads;
+	sfoc_electrical_degrees = normalized_degrees(sensor_electrical_rads);
+
+	shaft_mechanical_degrees = normalized_degrees(shaft_mechanical_rads);
+	shaft_vs_spi_degrees = wrapped_degrees(shaft_mechanical_rads - spi_mechanical_rads);
+	foc_zero_electric_degrees = normalized_degrees(zero_electric_rads);
+	foc_expected_electrical_degrees = normalized_degrees(expected_electrical_rads);
+	foc_internal_electrical_degrees = normalized_degrees(internal_electrical_rads);
+	foc_sensor_electrical_error_degrees = wrapped_degrees(expected_electrical_rads - internal_electrical_rads);
+	foc_stator_vector_magnitude = stator_vector_magnitude;
+	foc_stator_vector_degrees = normalized_degrees(stator_vector_rads);
+	foc_stator_vs_rotor_degrees = (stator_vector_magnitude > 0.001f) ? wrapped_degrees(stator_vector_rads - sensor_electrical_rads) : 0.0f;
+	foc_stator_vs_internal_electrical_degrees = (stator_vector_magnitude > 0.001f) ? wrapped_degrees(stator_vector_rads - internal_electrical_rads) : 0.0f;
+	foc_sensor_offset_degrees = normalized_degrees(motor.sensor_offset);
+	foc_voltage_q = motor.voltage.q;
+	foc_voltage_d = motor.voltage.d;
+	foc_ualpha = motor.Ualpha;
+	foc_ubeta = motor.Ubeta;
+	foc_target_current_amps = motor.target;
+	foc_current_q_amps = motor.current.q;
+	foc_current_d_amps = motor.current.d;
+	foc_sensor_direction_sign = (motor.sensor_direction == Direction::CW) ? 1.0f : ((motor.sensor_direction == Direction::CCW) ? -1.0f : 0.0f);
+}
 #endif
 
 void setup() {
@@ -167,7 +245,8 @@ Serial.println("Step 4 setup...");
 	currentsense.gain_c *= -1;
 	driver.voltage_power_supply = supply_voltage_V;
 	driver.voltage_limit = driver.voltage_power_supply * 0.9f;
-	motor.voltage_limit = driver.voltage_limit * 0.5f;
+	//motor.voltage_limit = driver.voltage_limit * 0.5f;
+	motor.voltage_limit = 2;
 	driver.pwm_frequency = PWM_FREQ;
 	driver.enable_active_high = true;
 Serial.println("Step 6 setup...");
@@ -206,9 +285,14 @@ Serial.println("Step 8 setup...");
 
 	Serial.printf("PSU NOMINAL: %.2f V\n", v_bus);
 
-	motor.controller = MotionControlType::torque;
-	motor.torque_controller = TorqueControlType::estimated_current;
-	motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
+	
+	motor.linkSensor(&encoder2);
+	motor.linkDriver(&driver);
+	//motor.linkCurrentSense(&currentsense);
+	//currentsense.linkDriver(&driver);
+	//currentsense.skip_align = false;
+	//int cs_init = currentsense.init();
+	//Serial.printf("Current sense init status: %d\n", cs_init); 
 
     motor.axis_inductance.d = L_d;
     motor.axis_inductance.q = L_q;
@@ -228,19 +312,15 @@ Serial.println("Step 8 setup...");
 	motor.current_limit = maxCurrent;
 	motor.phase_resistance = phase_resistance;
 	motor.voltage_sensor_align = alignStrength;
-	motor.monitor_downsample = 100;
-	motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
+	//motor.monitor_downsample = 100;
+	//motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
 	motor.modulation_centered = 1;
-	motor.linkSensor(&encoder2);
-	motor.linkDriver(&driver);
-	motor.linkCurrentSense(&currentsense);
-	currentsense.linkDriver(&driver);
 
-	int cs_init = currentsense.init();
-	Serial.printf("Current sense init status: %d\n", cs_init);
-
+    motor.controller = MotionControlType::torque;
+	motor.torque_controller = TorqueControlType::estimated_current;
+	motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
+	
 	int m_init = motor.init();
-	currentsense.skip_align = false;
 	Serial.printf("Current skip_align: %d\n", m_init);
 
 	#if defined(MT6835_CALIB_OPENLOOP)
@@ -272,24 +352,9 @@ void loop() {
 		brake_control();
 		#endif
 	#endif
-		#if defined(ENCODER_DEBUG_TELEMETRY)
-		abz_raw_rads = encoder.getMechanicalAngle();
-		abz_effective_rads = abz_raw_rads;
-		radians = abz_effective_rads;
-		spi_mechanical_rads = encoder2.getMechanicalAngle();
-	    spi_mechanical_degrees = spi_mechanical_rads * RAD_2_DEG;
-		abz_spi_offset_rads = wrap_pm_pi(spi_mechanical_rads - abz_raw_rads);
-		openloop_mechanical_rads = _normalizeAngle(motor.shaft_angle);
-		openloop_electrical_rads = _normalizeAngle(motor.electrical_angle);
-		electrical_degrees = openloop_electrical_rads * RAD_2_DEG;
-		openloop_mechanical_from_electrical_rads = _normalizeAngle(openloop_electrical_rads / (float)pole_pairs);
-		openloop_vs_encoder_error_rads = wrap_pm_pi(openloop_mechanical_rads - radians);
-		spi_vs_encoder_error_rads = wrap_pm_pi(spi_mechanical_rads - radians);
-		spi_vs_openloop_error_rads = wrap_pm_pi(spi_mechanical_rads - openloop_mechanical_rads);
-		sfoc_electrical_rads = motor.electricalAngle();
-		sfoc_electrical_degrees = sfoc_electrical_rads * RAD_2_DEG;
-		#endif
-
+#if defined(ENCODER_DEBUG_TELEMETRY)
+	update_encoder_debug_telemetry();
+	#endif
 #if defined(ESTOP_ENABLE)
 		estop_update();
 		if (estop_active()) {

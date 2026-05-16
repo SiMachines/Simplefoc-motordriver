@@ -169,6 +169,26 @@ extern bool pwm_input_control_enabled;
 #endif
 
 #if defined(ENCODER_DEBUG_TELEMETRY)
+extern float abz_mechanical_degrees;
+extern float shaft_mechanical_degrees;
+extern float shaft_vs_spi_degrees;
+extern float foc_zero_electric_degrees;
+extern float foc_expected_electrical_degrees;
+extern float foc_internal_electrical_degrees;
+extern float foc_sensor_electrical_error_degrees;
+extern float foc_stator_vector_degrees;
+extern float foc_stator_vector_magnitude;
+extern float foc_stator_vs_rotor_degrees;
+extern float foc_stator_vs_internal_electrical_degrees;
+extern float foc_sensor_offset_degrees;
+extern float foc_voltage_q;
+extern float foc_voltage_d;
+extern float foc_ualpha;
+extern float foc_ubeta;
+extern float foc_target_current_amps;
+extern float foc_current_q_amps;
+extern float foc_current_d_amps;
+extern float foc_sensor_direction_sign;
 extern float abz_raw_rads;
 extern float abz_effective_rads;
 extern float abz_spi_offset_rads;

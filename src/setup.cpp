@@ -630,11 +630,11 @@ motor.characteriseMotor(alignStrength);
   Serial.println(" Ohms");
 
   Serial.print("D-axis inductance: ");
-  Serial.print(L_d * 1000);
+  Serial.print(L_d);
   Serial.println(" mH");
 
   Serial.print("Q-axis inductance: ");
-  Serial.print(L_q * 1000);
+  Serial.print(L_q);
   Serial.println(" mH");
 }
 
