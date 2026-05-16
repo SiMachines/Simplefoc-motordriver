@@ -162,7 +162,7 @@ do_not_interpret_as_enum = false
 [var9]
 name = electrical_degrees
 tracked_name = electrical_degrees
-address = 536878016
+address = 536878028
 type = 7
 color = 1888542953
 should_update_from_elf = true
@@ -526,7 +526,7 @@ do_not_interpret_as_enum = false
 [var37]
 name = radians
 tracked_name = radians
-address = 536878008
+address = 536878020
 type = 7
 color = 2479085545
 should_update_from_elf = true
@@ -539,7 +539,7 @@ do_not_interpret_as_enum = false
 [var38]
 name = sfoc_electrical_degrees
 tracked_name = sfoc_electrical_degrees
-address = 536878012
+address = 536878024
 type = 7
 color = 1281653590
 should_update_from_elf = true
@@ -578,7 +578,7 @@ do_not_interpret_as_enum = false
 [var41]
 name = spi_mechanical_degrees
 tracked_name = spi_mechanical_degrees
-address = 536878020
+address = 536878032
 type = 7
 color = 4137522428
 should_update_from_elf = true

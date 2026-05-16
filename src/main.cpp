@@ -8,7 +8,7 @@ float L_d = 0.00116f;
 float L_q = 0.00131f;
 float motor_KV = 12.5f;
 float maxCurrent = 5.0f;
-float alignStrength = 4.0f;
+float alignStrength = 5.0f;
 #if defined(PWM_INPUT)
 STM32PWMInput pwmInput = STM32PWMInput(PB_15_ALT2);
 #endif
@@ -338,7 +338,7 @@ Serial.println("Step 8 setup...");
 	motor.foc_modulation = FOCModulationType::SpaceVectorPWM;
 	
 	int m_init = motor.init();
-	Serial.printf("Current skip_align: %d\n", m_init);
+	Serial.printf("Motor init: %d\n", m_init);
 
 	#if defined(MT6835_CALIB_OPENLOOP)
 	mt6835_autocal_sequence();
