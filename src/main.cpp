@@ -3,8 +3,9 @@
 #if defined(STM32G4)
 uint16_t BRAKE_RESISTANCE = 5 * 100;
 float phase_resistance = 0.9f;
-float L_d = 1.16;
-float L_q = 1.31;
+// SimpleFOC expects inductance in henries, not millihenries.
+float L_d = 0.00116f;
+float L_q = 0.00131f;
 float motor_KV = 12.5f;
 float maxCurrent = 5.0f;
 float alignStrength = 4.0f;
@@ -29,7 +30,6 @@ float spi_mechanical_degrees;
 float electrical_degrees;
 float sfoc_electrical_degrees;
 float radians;
-float electrical_rads = 0.0f;
 float abz_raw_rads = 0.0f;
 float abz_effective_rads = 0.0f;
 float abz_spi_offset_rads = 0.0f;
