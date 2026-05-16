@@ -30,11 +30,11 @@ float spi_mechanical_degrees;
 float electrical_degrees;
 float sfoc_electrical_degrees;
 float radians;
-float monitor_target_value = 0.0f;
-float monitor_voltage_q_value = 0.0f;
-float monitor_voltage_d_value = 0.0f;
-float monitor_current_q_ma = 0.0f;
-float monitor_current_d_ma = 0.0f;
+volatile float monitor_target_value = 0.0f;
+volatile float monitor_voltage_q_value = 0.0f;
+volatile float monitor_voltage_d_value = 0.0f;
+volatile float monitor_current_q_ma = 0.0f;
+volatile float monitor_current_d_ma = 0.0f;
 float abz_mechanical_degrees = 0.0f;
 float shaft_mechanical_degrees = 0.0f;
 float shaft_vs_spi_degrees = 0.0f;
@@ -148,6 +148,8 @@ static void update_encoder_debug_telemetry() {
 	monitor_target_value = motor.target;
 	monitor_voltage_q_value = motor.voltage.q;
 	monitor_voltage_d_value = motor.voltage.d;
+	monitor_current_q_ma = monitor_currents.q * 1000.0f;
+	monitor_current_d_ma = monitor_currents.d * 1000.0f;
 
 	abz_raw_rads = encoder.getMechanicalAngle();
 	abz_effective_rads = abz_raw_rads;

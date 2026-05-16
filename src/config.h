@@ -169,11 +169,11 @@ extern bool pwm_input_control_enabled;
 #endif
 
 #if defined(ENCODER_DEBUG_TELEMETRY)
-extern float monitor_target_value;
-extern float monitor_voltage_q_value;
-extern float monitor_voltage_d_value;
-extern float monitor_current_q_ma;
-extern float monitor_current_d_ma;
+extern volatile float monitor_target_value;
+extern volatile float monitor_voltage_q_value;
+extern volatile float monitor_voltage_d_value;
+extern volatile float monitor_current_q_ma;
+extern volatile float monitor_current_d_ma;
 extern float abz_mechanical_degrees;
 extern float shaft_mechanical_degrees;
 extern float shaft_vs_spi_degrees;
