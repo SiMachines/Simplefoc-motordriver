@@ -24,10 +24,11 @@ STM32PWMInput pwmInput = STM32PWMInput(PE5);
 #endif
 #endif
 #if defined(ENCODER_DEBUG_TELEMETRY)
-float measured_electrical_rads;
+float sfoc_electrical_rads;
+float spi_mechanical_degrees;
+float electrical_degrees;
 float radians;
 float electrical_rads = 0.0f;
-float degrees = 0;
 float abz_raw_rads = 0.0f;
 float abz_effective_rads = 0.0f;
 float abz_spi_offset_rads = 0.0f;
@@ -238,8 +239,8 @@ Serial.println("Step 8 setup...");
 	Serial.printf("Current sense init status: %d\n", cs_init);
 
 	int m_init = motor.init();
-	currentsense.skip_align = true;
-	Serial.printf("Motor init status: %d\n", m_init);
+	currentsense.skip_align = false;
+	Serial.printf("Current skip_align: %d\n", m_init);
 
 	#if defined(MT6835_CALIB_OPENLOOP)
 	mt6835_autocal_sequence();
@@ -258,6 +259,7 @@ Serial.println("Step 8 setup...");
 
 void loop() {
 	current_time = HAL_GetTick();
+	encoder2.update();
 	if ((current_time - t_pwm) >= 1) {
 		t_pwm = current_time;
 		check_vbus();
@@ -269,23 +271,21 @@ void loop() {
 		brake_control();
 		#endif
 	#endif
-
 		#if defined(ENCODER_DEBUG_TELEMETRY)
 		abz_raw_rads = encoder.getMechanicalAngle();
 		abz_effective_rads = abz_raw_rads;
 		radians = abz_effective_rads;
-		degrees = radians * RAD_2_DEG;
-		encoder2.update();
 		spi_mechanical_rads = encoder2.getMechanicalAngle();
+	    spi_mechanical_degrees = spi_mechanical_rads * RAD_2_DEG;
 		abz_spi_offset_rads = wrap_pm_pi(spi_mechanical_rads - abz_raw_rads);
 		openloop_mechanical_rads = _normalizeAngle(motor.shaft_angle);
 		openloop_electrical_rads = _normalizeAngle(motor.electrical_angle);
+		electrical_degrees = openloop_electrical_rads * RAD_2_DEG;
 		openloop_mechanical_from_electrical_rads = _normalizeAngle(openloop_electrical_rads / (float)pole_pairs);
 		openloop_vs_encoder_error_rads = wrap_pm_pi(openloop_mechanical_rads - radians);
 		spi_vs_encoder_error_rads = wrap_pm_pi(spi_mechanical_rads - radians);
 		spi_vs_openloop_error_rads = wrap_pm_pi(spi_mechanical_rads - openloop_mechanical_rads);
-		measured_electrical_rads = motor.electricalAngle();
-		electrical_rads = openloop_electrical_rads;
+		sfoc_electrical_rads = motor.electricalAngle();
 		#endif
 
 #if defined(ESTOP_ENABLE)

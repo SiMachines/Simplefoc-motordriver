@@ -34,7 +34,7 @@
 // Auto-save MT6835 setting changes (e.g. ABZ resolution via Commander E) to EEPROM
 #define MT6835_AUTO_EEPROM_WRITE_ON_SETTING
 // Encoder telemetry/debug calculations in loop() (ABZ/SPI/openloop comparison values)
-//#define ENCODER_DEBUG_TELEMETRY
+#define ENCODER_DEBUG_TELEMETRY
 
 #define ENCODER_SOURCE_ABZ 0U
 #define ENCODER_SOURCE_SPI 1U
@@ -169,7 +169,6 @@ extern bool pwm_input_control_enabled;
 #endif
 
 #if defined(ENCODER_DEBUG_TELEMETRY)
-extern float degrees;
 extern float abz_raw_rads;
 extern float abz_effective_rads;
 extern float abz_spi_offset_rads;
