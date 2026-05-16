@@ -91,7 +91,7 @@ bool vbus_adc2_ready = false;
 float target = 0.0f;
 bool estop_motor_disabled = false;
 #if defined(PWM_INPUT)
-bool pwm_input_control_enabled = false;
+bool pwm_input_control_enabled = true;
 #endif
 
 SimpleFOCDebug debug;
@@ -262,8 +262,8 @@ Serial.println("Step 4 setup...");
 	
 	driver.voltage_power_supply = supply_voltage_V;
 	driver.voltage_limit = driver.voltage_power_supply * 0.9f;
-	motor.voltage_limit = driver.voltage_limit * 0.4f;
-	//motor.voltage_limit = 2;
+	//motor.voltage_limit = driver.voltage_limit * 0.4f;
+	motor.voltage_limit = 5;
 	driver.pwm_frequency = PWM_FREQ;
 	driver.enable_active_high = true;
 Serial.println("Step 6 setup...");
