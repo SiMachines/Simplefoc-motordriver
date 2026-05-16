@@ -30,6 +30,11 @@ float spi_mechanical_degrees;
 float electrical_degrees;
 float sfoc_electrical_degrees;
 float radians;
+float monitor_target_value = 0.0f;
+float monitor_voltage_q_value = 0.0f;
+float monitor_voltage_d_value = 0.0f;
+float monitor_current_q_ma = 0.0f;
+float monitor_current_d_ma = 0.0f;
 float abz_mechanical_degrees = 0.0f;
 float shaft_mechanical_degrees = 0.0f;
 float shaft_vs_spi_degrees = 0.0f;
@@ -134,6 +139,16 @@ static float wrapped_degrees(float angle) {
 }
 
 static void update_encoder_debug_telemetry() {
+	DQCurrent_s monitor_currents = motor.current;
+	if (motor.current_sense && motor.torque_controller != TorqueControlType::foc_current) {
+		monitor_currents = motor.current_sense->getFOCCurrents(motor.electrical_angle);
+		monitor_currents.q = motor.LPF_current_q(monitor_currents.q);
+		monitor_currents.d = motor.LPF_current_d(monitor_currents.d);
+	}
+	monitor_target_value = motor.target;
+	monitor_voltage_q_value = motor.voltage.q;
+	monitor_voltage_d_value = motor.voltage.d;
+
 	abz_raw_rads = encoder.getMechanicalAngle();
 	abz_effective_rads = abz_raw_rads;
 	radians = abz_effective_rads;
@@ -315,7 +330,7 @@ Serial.println("Step 8 setup...");
 	motor.phase_resistance = phase_resistance;
 	motor.voltage_sensor_align = alignStrength;
 	motor.monitor_downsample = 10;
-	motor.monitor_variables = _MON_CURR_Q | _MON_CURR_D;
+	motor.monitor_variables = _MON_CURR_Q | _MON_TARGET | _MON_CURR_D;
 	motor.modulation_centered = 1;
 
     motor.controller = MotionControlType::torque;
